@@ -71,6 +71,7 @@ export const props = {
 import { ref, onMounted, onUnmounted, computed, watch } from "vue";
 import { useRuntimeConfig } from "#app";
 import useDevLog from "../composables/useDevLog";
+import useNuxtErrorHandler from "../composables/useNuxtErrorHandler";
 
 const config = useRuntimeConfig().public.devConsole;
 
@@ -209,7 +210,7 @@ watch(
       localTheme.value = newTheme;
     }
   },
-  { immediate: true },
+  { immediate: true }
 );
 
 // Position handling
@@ -245,7 +246,7 @@ watch(
       logs.value = logs.value.slice(-mergedProps.value.maxLogHistory);
     }
   },
-  { immediate: true },
+  { immediate: true }
 );
 
 const originalConsole = {
@@ -361,7 +362,7 @@ const copyToClipboard = async (log) => {
   try {
     const content = log.content
       .map((item) =>
-        typeof item === "object" ? JSON.stringify(item, null, 2) : item,
+        typeof item === "object" ? JSON.stringify(item, null, 2) : item
       )
       .join(" ");
     await navigator.clipboard.writeText(content);
@@ -401,6 +402,8 @@ const handleKeyboardShortcut = (event) => {
 onMounted(() => {
   interceptConsole();
   window.addEventListener("keydown", handleKeyboardShortcut);
+  // Initialize Nuxt error handler
+  useNuxtErrorHandler();
 });
 
 onUnmounted(() => {
@@ -569,12 +572,12 @@ onUnmounted(() => {
               </v-expansion-panel-title>
 
               <v-expansion-panel-text>
-                <pre class="my-0 text-body-2">{{
+                <pre class="my-0 text-body-2 text-wrap">{{
                   log.content
                     .map((item) =>
                       typeof item === "object"
                         ? JSON.stringify(item, null, 2)
-                        : item,
+                        : item
                     )
                     .join(" ")
                 }}</pre>

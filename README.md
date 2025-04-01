@@ -72,15 +72,6 @@ devLog.log("Hello");
 devLog.error("Error message");
 devLog.warn("Warning message");
 devLog.info("Info message");
-
-// Using the console composable for configuration
-const devConsole = useDevConsole();
-
-// Toggle visibility
-devConsole.toggleVisibility();
-
-// Change theme
-devConsole.setTheme("light");
 ```
 
 ### Keyboard Shortcuts
