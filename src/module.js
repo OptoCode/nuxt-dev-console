@@ -34,7 +34,9 @@ export default defineNuxtModule({
     },
   },
   schema: {
-    enabled: Boolean,
+    enabled: {
+      type: "boolean",
+    },
     position: {
       type: String,
       enum: ["bottom-right", "bottom-left", "top-right", "top-left"],
@@ -62,12 +64,14 @@ export default defineNuxtModule({
         clear: { type: String },
       },
     },
-    allowProduction: Boolean,
+    allowProduction: {
+      type: "boolean",
+    },
     filters: {
       type: Object,
       properties: {
-        showTimestamp: Boolean,
-        showLogLevel: Boolean,
+        showTimestamp: { type: "boolean" },
+        showLogLevel: { type: "boolean" },
         minLevel: {
           type: String,
           enum: ["info", "warn", "error"],
@@ -90,7 +94,7 @@ export default defineNuxtModule({
       const isProduction = process.env.NODE_ENV === "production";
       if (isProduction && !options.allowProduction) {
         console.warn(
-          "[nuxt-dev-console] DevConsole is disabled in production. Set allowProduction: true to override.",
+          "[nuxt-dev-console] DevConsole is disabled in production. Set allowProduction: true to override."
         );
         return;
       }
@@ -135,7 +139,7 @@ export default defineNuxtModule({
       } catch (error) {
         console.error(
           "[nuxt-dev-console] Failed to register DevConsole component:",
-          error,
+          error
         );
         throw error;
       }
@@ -146,7 +150,7 @@ export default defineNuxtModule({
       } catch (error) {
         console.error(
           "[nuxt-dev-console] Failed to register composables:",
-          error,
+          error
         );
         throw error;
       }
