@@ -34,47 +34,66 @@ export default defineNuxtModule({
     },
   },
   schema: {
-    enabled: {
-      type: "boolean",
-    },
-    position: {
-      type: "string",
-      enum: ["bottom-right", "bottom-left", "top-right", "top-left"],
-    },
-    theme: {
-      type: "string",
-      enum: ["light", "dark", "system"],
-    },
-    height: {
-      type: "number",
-      min: 100,
-    },
-    width: {
-      type: "number",
-      min: 200,
-    },
-    maxLogHistory: {
-      type: "number",
-      min: 10,
-    },
-    shortcuts: {
-      type: "object",
-      properties: {
-        toggle: { type: "string" },
-        clear: { type: "string" },
+    type: "object",
+    properties: {
+      enabled: {
+        type: "boolean",
+        default: true,
       },
-    },
-    allowProduction: {
-      type: "boolean",
-    },
-    filters: {
-      type: "object",
-      properties: {
-        showTimestamp: { type: "boolean" },
-        showLogLevel: { type: "boolean" },
-        minLevel: {
-          type: "string",
-          enum: ["info", "warn", "error"],
+      position: {
+        type: "string",
+        default: "bottom-right",
+        enum: ["bottom-right", "bottom-left", "top-right", "top-left"],
+      },
+      theme: {
+        type: "string",
+        default: "dark",
+        enum: ["light", "dark", "system"],
+      },
+      height: {
+        type: "number",
+        default: 600,
+        minimum: 100,
+      },
+      width: {
+        type: "number",
+        default: 500,
+        minimum: 200,
+      },
+      maxLogHistory: {
+        type: "number",
+        default: 100,
+        minimum: 10,
+      },
+      shortcuts: {
+        type: "object",
+        default: {
+          toggle: "ctrl+shift+d",
+          clear: "ctrl+l",
+        },
+        properties: {
+          toggle: { type: "string" },
+          clear: { type: "string" },
+        },
+      },
+      allowProduction: {
+        type: "boolean",
+        default: false,
+      },
+      filters: {
+        type: "object",
+        default: {
+          showTimestamp: true,
+          showLogLevel: true,
+          minLevel: "info",
+        },
+        properties: {
+          showTimestamp: { type: "boolean" },
+          showLogLevel: { type: "boolean" },
+          minLevel: {
+            type: "string",
+            enum: ["info", "warn", "error"],
+          },
         },
       },
     },
