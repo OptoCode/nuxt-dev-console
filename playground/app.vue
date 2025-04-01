@@ -1,14 +1,34 @@
 <template>
-  <v-container>
-    <h1>Nuxt Dev Console Test</h1>
-    <div class="buttons">
-      <button @click="testLog">Test Log</button>
-      <button @click="testError">Test Error</button>
-      <button @click="testWarn">Test Warning</button>
-      <button @click="testInfo">Test Info</button>
-    </div>
-    <dev-console position="top left" />
-  </v-container>
+  <v-app>
+    <v-main>
+      <v-container>
+        <v-row>
+          <v-col cols="12">
+            <h1 class="text-h4 mb-4">Nuxt Dev Console Test</h1>
+            <v-row>
+              <v-col cols="12" sm="6" md="3">
+                <v-btn color="success" block @click="testLog"> Test Log </v-btn>
+              </v-col>
+              <v-col cols="12" sm="6" md="3">
+                <v-btn color="error" block @click="testError">
+                  Test Error
+                </v-btn>
+              </v-col>
+              <v-col cols="12" sm="6" md="3">
+                <v-btn color="warning" block @click="testWarn">
+                  Test Warning
+                </v-btn>
+              </v-col>
+              <v-col cols="12" sm="6" md="3">
+                <v-btn color="info" block @click="testInfo"> Test Info </v-btn>
+              </v-col>
+            </v-row>
+          </v-col>
+        </v-row>
+      </v-container>
+    </v-main>
+    <dev-console />
+  </v-app>
 </template>
 
 <script setup>
@@ -34,37 +54,7 @@ const testInfo = () => {
 </script>
 
 <style>
-.buttons {
-  display: flex;
-  gap: 1rem;
-  margin-top: 1rem;
-}
-
-button {
-  padding: 0.5rem 1rem;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: bold;
-}
-
-button:nth-child(1) {
-  background: #4caf50;
-  color: white;
-}
-
-button:nth-child(2) {
-  background: #f44336;
-  color: white;
-}
-
-button:nth-child(3) {
-  background: #ff9800;
-  color: white;
-}
-
-button:nth-child(4) {
-  background: #2196f3;
-  color: white;
+.v-application {
+  background-color: #f5f5f5;
 }
 </style>

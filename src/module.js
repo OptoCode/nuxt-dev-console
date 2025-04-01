@@ -18,7 +18,7 @@ export default defineNuxtModule({
   defaults: {
     enabled: true,
     position: "bottom-right",
-    theme: "dark",
+    theme: "light",
     height: 600,
     width: 500,
     maxLogHistory: 100,

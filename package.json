@@ -23,7 +23,7 @@
     "lint": "eslint .",
     "test": "vitest run",
     "prepare": "nuxt-module-build",
-    "release": "npm run test && npm run build && npm publish",
+    "release": "npm run test && npm run build && npm version patch && npm publish",
     "format": "prettier --write .",
     "testing module": "npm run build && npm link",
     "create test project": "mkdir test-project && cd test-project && npx nuxi init",
