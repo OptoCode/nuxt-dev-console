@@ -27,7 +27,8 @@
     "format": "prettier --write ."
   },
   "dependencies": {
-    "@nuxt/kit": "^3.x.x"
+    "@nuxt/kit": "^3.x.x",
+    "vuetify-nuxt-module": "^0.10.3"
   },
   "devDependencies": {
     "@nuxt/module-builder": "^0.5.x",

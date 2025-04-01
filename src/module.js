@@ -1,3 +1,11 @@
+import {
+  defineNuxtModule,
+  addComponent,
+  createResolver,
+  addImportsDir,
+  installModule,
+} from "@nuxt/kit";
+
 export default defineNuxtModule({
   meta: {
     name: "nuxt-dev-console",
@@ -16,13 +24,20 @@ export default defineNuxtModule({
       default: true,
     },
   },
-  setup(options, nuxt) {
+  async setup(options, nuxt) {
     try {
       if (!options.enabled) {
         return;
       }
 
       const resolver = createResolver(import.meta.url);
+
+      // Install Vuetify module
+      await installModule("vuetify-nuxt-module", {
+        moduleOptions: {
+          prefixForDefaultIcons: "mdi",
+        },
+      });
 
       // Add module hooks for extensibility
       nuxt.hook("devConsole:beforeInit", () => {
@@ -47,20 +62,6 @@ export default defineNuxtModule({
 
       // Add composables
       addImportsDir(resolver.resolve("./runtime/composables"));
-
-      // Add plugin to inject DevConsole into app
-      nuxt.hook("app:templates", () => {
-        try {
-          addComponent({
-            name: "NuxtDevConsole",
-            filePath: resolver.resolve("./runtime/components/DevConsole.vue"),
-            global: true,
-          });
-        } catch (error) {
-          console.error("Failed to register NuxtDevConsole component:", error);
-          throw error;
-        }
-      });
     } catch (error) {
       console.error("Failed to setup nuxt-dev-console module:", error);
       throw error;

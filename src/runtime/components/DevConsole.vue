@@ -1,7 +1,8 @@
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from "vue";
+import useDevLog from "../composables/useDevLog";
 
-const logs = ref([]);
+const { logs } = useDevLog();
 const isVisible = ref(false);
 const isDev = import.meta.dev;
 const searchQuery = ref("");
@@ -56,22 +57,18 @@ const interceptConsole = () => {
   if (!isDev) return;
 
   console.log = (...args) => {
-    logs.value.unshift({ type: "log", content: args, timestamp: new Date() });
     originalConsole.log(...args);
   };
 
   console.error = (...args) => {
-    logs.value.unshift({ type: "error", content: args, timestamp: new Date() });
     originalConsole.error(...args);
   };
 
   console.warn = (...args) => {
-    logs.value.unshift({ type: "warn", content: args, timestamp: new Date() });
     originalConsole.warn(...args);
   };
 
   console.info = (...args) => {
-    logs.value.unshift({ type: "info", content: args, timestamp: new Date() });
     originalConsole.info(...args);
   };
 };
@@ -167,7 +164,6 @@ onUnmounted(() => {
                 variant="text"
               >
                 <v-icon :icon="type.icon" />
-                <!-- tooltip -->
                 <v-tooltip activator="parent" location="bottom">
                   {{ type.type.toUpperCase() }}
                 </v-tooltip>
