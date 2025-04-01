@@ -22,6 +22,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Comprehensive documentation
 - TypeScript support
 - Playground environment
+- Composable functions:
+  - `useDevLog` for logging and console control
+  - `useNuxtErrorHandler` for automatic error handling
+- Browser console control with enable/disable functionality
+- Automatic Nuxt and Vue error/warning handling
+- Log history management with max size limit
+- Sanitized error and object logging
 
 ### Changed
 

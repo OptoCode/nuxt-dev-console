@@ -3,9 +3,22 @@ import { ref } from "vue";
 // Create shared state outside the composable
 const logs = ref([]);
 const maxLogSize = 1000; // Maximum number of logs to keep
+let isLogging = false; // Flag to prevent recursive logging
+let browserConsoleEnabled = true; // Direct control for browser console logging
 
 const createLog = (type, args) => {
   try {
+    // Prevent recursive logging
+    if (isLogging) return;
+    isLogging = true;
+
+    // Log to browser console if enabled
+    if (browserConsoleEnabled) {
+      // Use original console methods to avoid recursion
+      const originalConsole = window.console;
+      originalConsole[type](...args);
+    }
+
     const sanitizedArgs = args.map((arg) => {
       if (arg instanceof Error) {
         return {
@@ -38,7 +51,11 @@ const createLog = (type, args) => {
     }
   } catch (error) {
     // Use the original console to avoid circular reference
-    console.error("Failed to create log:", error);
+    if (!isLogging) {
+      console.error("Failed to create log:", error);
+    }
+  } finally {
+    isLogging = false;
   }
 };
 
@@ -51,6 +68,15 @@ const useDevLog = () => {
     logs.value = [];
   };
 
+  // Add methods to control browser console logging
+  const enableBrowserConsole = () => {
+    browserConsoleEnabled = true;
+  };
+
+  const disableBrowserConsole = () => {
+    browserConsoleEnabled = false;
+  };
+
   return {
     log,
     error,
@@ -58,6 +84,8 @@ const useDevLog = () => {
     info,
     clear,
     logs,
+    enableBrowserConsole,
+    disableBrowserConsole,
   };
 };
 

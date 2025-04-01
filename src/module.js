@@ -17,7 +17,7 @@ export default defineNuxtModule({
   },
   defaults: {
     enabled: true,
-    position: "bottom-right",
+    position: "bottom-left",
     theme: "light",
     height: 600,
     width: 500,
@@ -115,6 +115,9 @@ export default defineNuxtModule({
         version: nuxt.options.version,
         environment: process.env.NODE_ENV,
       };
+
+      // Debug log the configuration
+      console.log("[nuxt-dev-console] Setting runtime config:", runtimeConfig);
 
       nuxt.options.runtimeConfig.public.devConsole = runtimeConfig;
 

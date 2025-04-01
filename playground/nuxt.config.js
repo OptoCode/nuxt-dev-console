@@ -3,8 +3,7 @@ export default defineNuxtConfig({
   modules: ["../src/module", "vuetify-nuxt-module"],
   devConsole: {
     enabled: true,
-    browserConsole: true,
-    position: "bottom-right",
+    position: "bottom-left",
     theme: "light",
     height: 600,
     width: 500,

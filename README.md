@@ -68,10 +68,24 @@ The DevConsole will be automatically available in development mode. You can use 
 // Using the log composable
 const devLog = useDevLog();
 
+// Basic logging functions
 devLog.log("Hello");
 devLog.error("Error message");
 devLog.warn("Warning message");
 devLog.info("Info message");
+
+// Browser console control
+devLog.enableBrowserConsole(); // Enable browser console logging
+devLog.disableBrowserConsole(); // Disable browser console logging
+
+// Clear logs
+devLog.clear();
+
+// Access logs array
+console.log(devLog.logs.value);
+
+// Using the error handler composable (automatically handles Nuxt and Vue errors)
+const errorHandler = useNuxtErrorHandler();
 ```
 
 ### Keyboard Shortcuts
