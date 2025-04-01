@@ -5,6 +5,8 @@ const logs = ref([]);
 const maxLogSize = 1000; // Maximum number of logs to keep
 let isLogging = false; // Flag to prevent recursive logging
 let browserConsoleEnabled = true; // Direct control for browser console logging
+let isConsoleIntercepted = false; // Flag to track if console is intercepted
+let originalConsole = null; // Store original console methods
 
 const createLog = (type, args) => {
   try {
@@ -15,8 +17,9 @@ const createLog = (type, args) => {
     // Log to browser console if enabled
     if (browserConsoleEnabled) {
       // Use original console methods to avoid recursion
-      const originalConsole = window.console;
-      originalConsole[type](...args);
+      if (originalConsole) {
+        originalConsole[type](...args);
+      }
     }
 
     const sanitizedArgs = args.map((arg) => {
@@ -59,6 +62,49 @@ const createLog = (type, args) => {
   }
 };
 
+const interceptConsole = () => {
+  if (isConsoleIntercepted) return;
+
+  // Store original methods with proper binding
+  originalConsole = {
+    log: console.log.bind(console),
+    error: console.error.bind(console),
+    warn: console.warn.bind(console),
+    info: console.info.bind(console),
+  };
+
+  // Override console methods
+  console.log = (...args) => {
+    createLog("log", args);
+    originalConsole.log(...args);
+  };
+
+  console.error = (...args) => {
+    createLog("error", args);
+    originalConsole.error(...args);
+  };
+
+  console.warn = (...args) => {
+    createLog("warn", args);
+    originalConsole.warn(...args);
+  };
+
+  console.info = (...args) => {
+    createLog("info", args);
+    originalConsole.info(...args);
+  };
+
+  isConsoleIntercepted = true;
+};
+
+const restoreConsole = () => {
+  if (!isConsoleIntercepted || !originalConsole) return;
+
+  Object.assign(console, originalConsole);
+  originalConsole = null;
+  isConsoleIntercepted = false;
+};
+
 const useDevLog = () => {
   const log = (...args) => createLog("log", args);
   const error = (...args) => createLog("error", args);
@@ -86,6 +132,8 @@ const useDevLog = () => {
     logs,
     enableBrowserConsole,
     disableBrowserConsole,
+    interceptConsole,
+    restoreConsole,
   };
 };
 

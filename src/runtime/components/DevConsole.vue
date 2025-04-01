@@ -172,7 +172,16 @@ const mergedProps = computed(() => {
   };
 });
 
-const { logs, log, error, warn, info, clear } = useDevLog();
+const {
+  logs,
+  _log,
+  _error,
+  _warn,
+  _info,
+  clear,
+  interceptConsole,
+  restoreConsole,
+} = useDevLog();
 const isVisible = ref(false);
 const isDev = process.env.NODE_ENV === "development" || config?.allowProduction;
 const searchQuery = ref("");
@@ -249,13 +258,6 @@ watch(
   { immediate: true }
 );
 
-const originalConsole = {
-  log: console.log.bind(console),
-  error: console.error.bind(console),
-  warn: console.warn.bind(console),
-  info: console.info.bind(console),
-};
-
 const logTypes = [
   { type: "log", icon: "mdi-console", color: "secondary" },
   { type: "error", icon: "mdi-alert-circle", color: "error" },
@@ -321,35 +323,6 @@ const getLogColor = (type) => {
   }
 };
 
-const interceptConsole = () => {
-  if (!isDev) return;
-
-  // Store original methods with proper binding
-  console.log = (...args) => {
-    log(...args);
-    originalConsole.log(...args);
-  };
-
-  console.error = (...args) => {
-    error(...args);
-    originalConsole.error(...args);
-  };
-
-  console.warn = (...args) => {
-    warn(...args);
-    originalConsole.warn(...args);
-  };
-
-  console.info = (...args) => {
-    info(...args);
-    originalConsole.info(...args);
-  };
-};
-
-const restoreConsole = () => {
-  Object.assign(console, originalConsole);
-};
-
 const clearLogs = () => {
   clear();
 };
@@ -407,7 +380,10 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-  restoreConsole();
+  // Only restore console when the app is actually unmounting
+  if (process.client && window.__NUXT_DEV_CONSOLE_UNMOUNTING__) {
+    restoreConsole();
+  }
   window.removeEventListener("keydown", handleKeyboardShortcut);
 });
 </script>

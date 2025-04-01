@@ -121,6 +121,13 @@ export default defineNuxtModule({
 
       nuxt.options.runtimeConfig.public.devConsole = runtimeConfig;
 
+      // Add unmounting flag to window
+      if (process.client) {
+        nuxt.hook("app:unmount", () => {
+          window.__NUXT_DEV_CONSOLE_UNMOUNTING__ = true;
+        });
+      }
+
       // Trigger afterInit hook
       await nuxt.callHook("devConsole:afterInit", { options: runtimeConfig });
     } catch (error) {

@@ -21,6 +21,11 @@ npm install nuxt-dev-console
 yarn add nuxt-dev-console
 ```
 
+## Update Module
+```bash
+npm install @opto-code/nuxt-dev-console@latest
+```
+
 ## Setup
 
 Add `nuxt-dev-console` to your `nuxt.config.js`:
