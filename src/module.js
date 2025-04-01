@@ -38,42 +38,42 @@ export default defineNuxtModule({
       type: "boolean",
     },
     position: {
-      type: String,
+      type: "string",
       enum: ["bottom-right", "bottom-left", "top-right", "top-left"],
     },
     theme: {
-      type: String,
+      type: "string",
       enum: ["light", "dark", "system"],
     },
     height: {
-      type: Number,
+      type: "number",
       min: 100,
     },
     width: {
-      type: Number,
+      type: "number",
       min: 200,
     },
     maxLogHistory: {
-      type: Number,
+      type: "number",
       min: 10,
     },
     shortcuts: {
-      type: Object,
+      type: "object",
       properties: {
-        toggle: { type: String },
-        clear: { type: String },
+        toggle: { type: "string" },
+        clear: { type: "string" },
       },
     },
     allowProduction: {
       type: "boolean",
     },
     filters: {
-      type: Object,
+      type: "object",
       properties: {
         showTimestamp: { type: "boolean" },
         showLogLevel: { type: "boolean" },
         minLevel: {
-          type: String,
+          type: "string",
           enum: ["info", "warn", "error"],
         },
       },

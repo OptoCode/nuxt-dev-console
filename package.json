@@ -28,7 +28,10 @@
     "testing module": "npm run build && npm link",
     "create test project": "mkdir test-project && cd test-project && npx nuxi init",
     "test project": "cd test-project && npm link @opto-code/nuxt-dev-console && npm run dev",
-    "start test project": "cd test-project && npm install && npm run dev"
+    "start test project": "cd test-project && npm install && npm run dev",
+    "version patch": "npm version patch",
+    "version minor": "npm version minor",
+    "version major": "npm version major"
   },
   "dependencies": {
     "@nuxt/kit": "^3.x.x",
