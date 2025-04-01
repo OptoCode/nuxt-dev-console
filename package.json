@@ -1,6 +1,6 @@
 {
   "name": "@opto-code/nuxt-dev-console",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Development console for Nuxt 3 applications",
   "repository": "https://github.com/OptoCode/nuxt-dev-console.git",
   "license": "MIT",
