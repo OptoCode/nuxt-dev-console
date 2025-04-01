@@ -1,8 +1,8 @@
 {
-  "name": "nuxt-dev-console",
+  "name": "@opto-code/nuxt-dev-console",
   "version": "1.0.0",
   "description": "Development console for Nuxt 3 applications",
-  "repository": "your-github-repo",
+  "repository": "https://github.com/OptoCode/nuxt-dev-console.git",
   "license": "MIT",
   "type": "module",
   "exports": {
