@@ -1,7 +1,18 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { fileURLToPath } from "node:url";
 import { setup, createResolver } from "@nuxt/kit";
-import module from "../src/module";
+import nuxtModule from "../src/module";
+
+// Mock the Nuxt Kit functions
+vi.mock("@nuxt/kit", async () => {
+  const actual = await vi.importActual("@nuxt/kit");
+  return {
+    ...actual,
+    installModule: vi.fn().mockResolvedValue(undefined),
+    addComponent: vi.fn().mockResolvedValue(undefined),
+    addImportsDir: vi.fn().mockResolvedValue(undefined),
+  };
+});
 
 describe("nuxt-dev-console", () => {
   let nuxt;
@@ -14,23 +25,35 @@ describe("nuxt-dev-console", () => {
         nuxt.hooks[name] = nuxt.hooks[name] || [];
         nuxt.hooks[name].push(fn);
       },
+      options: {
+        version: "3.0.0",
+        runtimeConfig: {
+          public: {},
+        },
+      },
+      _version: "3.0.0",
+      version: "3.0.0",
+      callHook: async () => {},
+      constructor: {
+        version: "3.0.0",
+      },
     };
     options = { enabled: true };
   });
 
   it("registers components when enabled", async () => {
-    await module.setup(options, nuxt);
-    expect(nuxt.hooks["app:templates"]).toBeDefined();
+    const module = await nuxtModule(options, nuxt);
+    expect(nuxt.hooks["devConsole:beforeInit"]).toBeDefined();
   });
 
   it("does not register components when disabled", async () => {
     options.enabled = false;
-    await module.setup(options, nuxt);
-    expect(nuxt.hooks["app:templates"]).toBeUndefined();
+    const module = await nuxtModule(options, nuxt);
+    expect(nuxt.hooks["devConsole:beforeInit"]).toBeUndefined();
   });
 
   it("registers devConsole hooks", async () => {
-    await module.setup(options, nuxt);
+    const module = await nuxtModule(options, nuxt);
     expect(nuxt.hooks["devConsole:beforeInit"]).toBeDefined();
     expect(nuxt.hooks["devConsole:log"]).toBeDefined();
   });

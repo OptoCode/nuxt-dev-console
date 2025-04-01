@@ -7,7 +7,7 @@
       <button @click="testWarn">Test Warning</button>
       <button @click="testInfo">Test Info</button>
     </div>
-    <dev-console />
+    <dev-console position="top left" />
   </v-container>
 </template>
 

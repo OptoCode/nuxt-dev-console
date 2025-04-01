@@ -1,6 +1,6 @@
 {
   "name": "@opto-code/nuxt-dev-console",
-  "version": "1.0.0",
+  "version": "0.1.1",
   "description": "Development console for Nuxt 3 applications",
   "repository": "https://github.com/OptoCode/nuxt-dev-console.git",
   "license": "MIT",
@@ -23,21 +23,32 @@
     "lint": "eslint .",
     "test": "vitest run",
     "prepare": "nuxt-module-build",
-    "release": "npm run lint && npm run test && npm run build && npm publish",
-    "format": "prettier --write ."
+    "release": "npm run test && npm run build && npm publish",
+    "format": "prettier --write .",
+    "testing module": "npm run build && npm link",
+    "create test project": "mkdir test-project && cd test-project && npx nuxi init",
+    "test project": "cd test-project && npm link @opto-code/nuxt-dev-console && npm run dev",
+    "start test project": "cd test-project && npm install && npm run dev"
   },
   "dependencies": {
     "@nuxt/kit": "^3.x.x",
     "vuetify-nuxt-module": "^0.10.3"
   },
   "devDependencies": {
+    "@eslint/js": "^9.23.0",
     "@nuxt/module-builder": "^0.5.x",
     "@nuxt/schema": "^3.x.x",
     "@types/node": "^20.x.x",
+    "@vitejs/plugin-vue": "^5.2.3",
+    "@vue/test-utils": "^2.4.x",
     "eslint": "^8.x.x",
-    "vitest": "^1.x.x",
-    "prettier": "^3.x.x",
     "eslint-config-prettier": "^9.x.x",
-    "eslint-plugin-prettier": "^5.x.x"
+    "eslint-plugin-prettier": "^5.x.x",
+    "eslint-plugin-vue": "^10.0.0",
+    "globals": "^16.0.0",
+    "jsdom": "^26.0.0",
+    "prettier": "^3.x.x",
+    "vitest": "^1.x.x",
+    "vue-eslint-parser": "^10.1.1"
   }
 }

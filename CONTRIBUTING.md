@@ -1,58 +1,131 @@
 # Contributing to nuxt-dev-console
 
-We love your input! We want to make contributing to nuxt-dev-console as easy and transparent as possible, whether it's:
+First off, thanks for taking the time to contribute! 🎉
 
-- Reporting a bug
-- Discussing the current state of the code
-- Submitting a fix
-- Proposing new features
-- Becoming a maintainer
+The following is a set of guidelines for contributing to nuxt-dev-console. These are mostly guidelines, not rules. Use your best judgment, and feel free to propose changes to this document in a pull request.
+
+## Code of Conduct
+
+This project and everyone participating in it is governed by our Code of Conduct. By participating, you are expected to uphold this code.
+
+## How Can I Contribute?
+
+### Reporting Bugs
+
+Before creating bug reports, please check the existing issues as you might find out that you don't need to create one. When you are creating a bug report, please include as many details as possible:
+
+- Use a clear and descriptive title
+- Describe the exact steps which reproduce the problem
+- Provide specific examples to demonstrate the steps
+- Describe the behavior you observed after following the steps
+- Explain which behavior you expected to see instead and why
+- Include screenshots if possible
+- Include your environment details (OS, Node.js version, npm version)
+
+### Suggesting Enhancements
+
+Enhancement suggestions are tracked as GitHub issues. When creating an enhancement suggestion, please include:
+
+- Use a clear and descriptive title
+- Provide a step-by-step description of the suggested enhancement
+- Provide specific examples to demonstrate the steps
+- Describe the current behavior and explain which behavior you expected to see instead
+- Explain why this enhancement would be useful
+- List some other packages where this enhancement exists, if applicable
+
+### Pull Requests
+
+- Fill in the required template
+- Do not include issue numbers in the PR title
+- Follow the JavaScript styleguide
+- Include thoughtfully-worded, well-structured tests
+- Document new code
+- End all files with a newline
 
 ## Development Process
 
-We use GitHub to host code, to track issues and feature requests, as well as accept pull requests.
+1. Fork the repo
+2. Create a new branch from `main`:
+   ```bash
+   git checkout -b feature/my-feature
+   # or
+   git checkout -b fix/my-fix
+   ```
+3. Make your changes
+4. Run the tests:
+   ```bash
+   npm run test
+   ```
+5. Run the linter:
+   ```bash
+   npm run lint
+   ```
+6. Push to your fork and submit a pull request
 
-1. Fork the repo and create your branch from `main`
-2. If you've added code that should be tested, add tests
-3. If you've changed APIs, update the documentation
-4. Ensure the test suite passes
-5. Make sure your code lints
-6. Issue that pull request!
+### Development Setup
 
-## Local Development
+1. Clone your fork:
+   ```bash
+   git clone https://github.com/your-username/nuxt-dev-console.git
+   ```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Create a branch for your changes:
+   ```bash
+   git checkout -b my-feature
+   ```
+4. Start the development server:
+   ```bash
+   npm run dev
+   ```
 
-1. Clone the repository
-2. Install dependencies: `npm install`
-3. Start development server: `npm run dev`
-4. Run tests: `npm run test`
-5. Build: `npm run build`
+### Scripts
 
-## Pull Request Process
+- `npm run dev` - Start the development server
+- `npm run build` - Build the module
+- `npm run lint` - Run ESLint
+- `npm run test` - Run tests
+- `npm run format` - Format code with Prettier
 
-1. Update the README.md with details of changes to the interface
-2. Update the package.json version following [SemVer](http://semver.org/)
-3. The PR will be merged once you have the sign-off of at least one maintainer
+## Style Guide
 
-## Any contributions you make will be under the MIT Software License
+### JavaScript
 
-In short, when you submit code changes, your submissions are understood to be under the same [MIT License](http://choosealicense.com/licenses/mit/) that covers the project. Feel free to contact the maintainers if that's a concern.
+- Use modern JavaScript features
+- Follow the ESLint configuration
+- Use meaningful variable names
+- Add comments for complex logic
+- Keep functions small and focused
 
-## Report bugs using GitHub's [issue tracker](https://github.com/your-repo/nuxt-dev-console/issues)
+### Commit Messages
 
-We use GitHub issues to track public bugs. Report a bug by [opening a new issue](https://github.com/your-repo/nuxt-dev-console/issues/new).
+- Use the present tense ("Add feature" not "Added feature")
+- Use the imperative mood ("Move cursor to..." not "Moves cursor to...")
+- Limit the first line to 72 characters or less
+- Reference issues and pull requests liberally after the first line
 
-## Write bug reports with detail, background, and sample code
+### Documentation
 
-**Great Bug Reports** tend to have:
+- Use Markdown for documentation
+- Keep language clear and concise
+- Include code examples where appropriate
+- Update README.md with any necessary changes
+- Document any new features in the CHANGELOG.md
 
-- A quick summary and/or background
-- Steps to reproduce
-  - Be specific!
-  - Give sample code if you can
-- What you expected would happen
-- What actually happens
-- Notes (possibly including why you think this might be happening, or stuff you tried that didn't work)
+## Additional Notes
 
-## License
+### Issue and Pull Request Labels
 
-By contributing, you agree that your contributions will be licensed under its MIT License. 
+- `bug` - Something isn't working
+- `enhancement` - New feature or request
+- `documentation` - Improvements or additions to documentation
+- `good first issue` - Good for newcomers
+- `help wanted` - Extra attention is needed
+
+## Questions?
+
+Feel free to open an issue with your question or reach out to the maintainers.
+
+Thank you for contributing to nuxt-dev-console! 🚀

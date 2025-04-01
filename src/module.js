@@ -17,53 +17,153 @@ export default defineNuxtModule({
   },
   defaults: {
     enabled: true,
+    position: "bottom-right",
+    theme: "dark",
+    height: 600,
+    width: 500,
+    maxLogHistory: 100,
+    shortcuts: {
+      toggle: "ctrl+shift+d",
+      clear: "ctrl+l",
+    },
+    allowProduction: false,
+    filters: {
+      showTimestamp: true,
+      showLogLevel: true,
+      minLevel: "info",
+    },
   },
   schema: {
-    enabled: {
-      type: "boolean",
-      default: true,
+    enabled: Boolean,
+    position: {
+      type: String,
+      enum: ["bottom-right", "bottom-left", "top-right", "top-left"],
+    },
+    theme: {
+      type: String,
+      enum: ["light", "dark", "system"],
+    },
+    height: {
+      type: Number,
+      min: 100,
+    },
+    width: {
+      type: Number,
+      min: 200,
+    },
+    maxLogHistory: {
+      type: Number,
+      min: 10,
+    },
+    shortcuts: {
+      type: Object,
+      properties: {
+        toggle: { type: String },
+        clear: { type: String },
+      },
+    },
+    allowProduction: Boolean,
+    filters: {
+      type: Object,
+      properties: {
+        showTimestamp: Boolean,
+        showLogLevel: Boolean,
+        minLevel: {
+          type: String,
+          enum: ["info", "warn", "error"],
+        },
+      },
     },
   },
   async setup(options, nuxt) {
+    // Validate Nuxt environment
+    if (!nuxt) {
+      throw new Error("nuxt-dev-console module requires a valid Nuxt instance");
+    }
+
     try {
       if (!options.enabled) {
         return;
       }
 
+      // Environment checks
+      const isProduction = process.env.NODE_ENV === "production";
+      if (isProduction && !options.allowProduction) {
+        console.warn(
+          "[nuxt-dev-console] DevConsole is disabled in production. Set allowProduction: true to override.",
+        );
+        return;
+      }
+
       const resolver = createResolver(import.meta.url);
 
-      // Install Vuetify module
-      await installModule("vuetify-nuxt-module", {
-        moduleOptions: {
-          prefixForDefaultIcons: "mdi",
-        },
+      // Register module hooks
+      nuxt.hook("devConsole:beforeInit", (_context) => {
+        // Hook triggered before console initialization
+        // Use this to modify initial setup or inject dependencies
       });
 
-      // Add module hooks for extensibility
-      nuxt.hook("devConsole:beforeInit", () => {
-        // Hook for module initialization
+      nuxt.hook("devConsole:afterInit", (_context) => {
+        // Hook triggered after console is initialized
+        // Use this to add custom functionality or modify console behavior
       });
 
-      nuxt.hook("devConsole:log", (log) => {
-        // Hook for log interception
+      nuxt.hook("devConsole:log", (_log) => {
+        // Hook for intercepting and processing logs
+        // log: { level, message, timestamp, metadata }
       });
 
-      // Add DevConsole component
+      // Install required dependencies
       try {
-        addComponent({
+        await installModule("vuetify-nuxt-module", {
+          moduleOptions: {
+            prefixForDefaultIcons: "mdi",
+          },
+        });
+      } catch (error) {
+        console.error("[nuxt-dev-console] Failed to install Vuetify:", error);
+        throw new Error("Failed to install required dependencies");
+      }
+
+      // Register components
+      try {
+        await addComponent({
           name: "DevConsole",
           filePath: resolver.resolve("./runtime/components/DevConsole.vue"),
           global: true,
         });
       } catch (error) {
-        console.error("Failed to register DevConsole component:", error);
+        console.error(
+          "[nuxt-dev-console] Failed to register DevConsole component:",
+          error,
+        );
         throw error;
       }
 
-      // Add composables
-      addImportsDir(resolver.resolve("./runtime/composables"));
+      // Add composables with error handling
+      try {
+        await addImportsDir(resolver.resolve("./runtime/composables"));
+      } catch (error) {
+        console.error(
+          "[nuxt-dev-console] Failed to register composables:",
+          error,
+        );
+        throw error;
+      }
+
+      // Add runtime config with validation
+      const runtimeConfig = {
+        ...options,
+        version: nuxt.options.version,
+        environment: process.env.NODE_ENV,
+      };
+
+      nuxt.options.runtimeConfig.public.devConsole = runtimeConfig;
+
+      // Trigger afterInit hook
+      await nuxt.callHook("devConsole:afterInit", { options: runtimeConfig });
     } catch (error) {
-      console.error("Failed to setup nuxt-dev-console module:", error);
+      console.error("[nuxt-dev-console] Module initialization failed:", error);
       throw error;
     }
   },
