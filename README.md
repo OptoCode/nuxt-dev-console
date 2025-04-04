@@ -32,7 +32,7 @@ Add `nuxt-dev-console` to your `nuxt.config.js`:
 
 ```js
 export default defineNuxtConfig({
-  modules: ["nuxt-dev-console"],
+  modules: ["@opto-code/nuxt-dev-console"],
   devConsole: {
     // Basic configuration
     enabled: true, // Enable/disable the console
