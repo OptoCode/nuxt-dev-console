@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.1.9
+
+
+### 🚀 Enhancements
+
+- Enhance DevConsole configuration and UI in playground and test project; update release script in package.json ([c6fa35c](https://github.com/OptoCode/nuxt-dev-console/commit/c6fa35c))
+- Add composable functions for logging and error handling, enhance browser console control, and update documentation ([a279677](https://github.com/OptoCode/nuxt-dev-console/commit/a279677))
+
+### 🩹 Fixes
+
+- Update schema boolean type definitions ([0bd0970](https://github.com/OptoCode/nuxt-dev-console/commit/0bd0970))
+- Update schema type definitions to use string literals ([0b87773](https://github.com/OptoCode/nuxt-dev-console/commit/0b87773))
+- Update schema to match Nuxt module configuration style ([bc26160](https://github.com/OptoCode/nuxt-dev-console/commit/bc26160))
+- Remove schema and rely on defaults for type information ([5e0f99c](https://github.com/OptoCode/nuxt-dev-console/commit/5e0f99c))
+
+### 💅 Refactors
+
+- Remove unused devConsole composable, enhance error handling in app.vue, and update README with new console log sections ([d5b056f](https://github.com/OptoCode/nuxt-dev-console/commit/d5b056f))
+
+### 🏡 Chore
+
+- Update CHANGELOG for version 0.1.7, improve console interception logic, and enhance README with module update instructions ([3603ff8](https://github.com/OptoCode/nuxt-dev-console/commit/3603ff8))
+- Update CHANGELOG for version 0.1.8 with minor improvements and bug fixes ([2dac6e3](https://github.com/OptoCode/nuxt-dev-console/commit/2dac6e3))
+
+### ❤️ Contributors
+
+- OptoCode ([@OptoCode](https://github.com/OptoCode))
+
 ## [0.1.8] - 2024-04-01
 
 ### Changed
