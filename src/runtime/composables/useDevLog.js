@@ -8,6 +8,33 @@ let browserConsoleEnabled = true; // Direct control for browser console logging
 let isConsoleIntercepted = false; // Flag to track if console is intercepted
 let originalConsole = null; // Store original console methods
 
+// Check if we're in production mode
+const isProduction = process.env.NODE_ENV === 'production';
+// Check if we're in a browser environment
+const isBrowser = typeof window !== 'undefined';
+
+// Create a no-op version for production when the module is disabled
+const createNoOpDevLog = () => {
+  // Empty ref for logs
+  const emptyLogs = ref([]);
+  
+  // No-op functions that do nothing
+  const noop = () => {};
+  
+  return {
+    log: noop,
+    error: noop,
+    warn: noop,
+    info: noop,
+    clear: noop,
+    logs: emptyLogs,
+    enableBrowserConsole: noop,
+    disableBrowserConsole: noop,
+    interceptConsole: noop,
+    restoreConsole: noop,
+  };
+};
+
 const createLog = (type, args) => {
   try {
     // Prevent recursive logging
@@ -35,7 +62,8 @@ const createLog = (type, args) => {
       if (typeof arg === "object") {
         try {
           return JSON.parse(JSON.stringify(arg));
-        } catch (e) {
+        // eslint-disable-next-line no-unused-vars
+        } catch (_) {
           return String(arg);
         }
       }
@@ -106,6 +134,24 @@ const restoreConsole = () => {
 };
 
 const useDevLog = () => {
+  // If we're in production and in a browser, return a no-op version
+  // This prevents errors when the module is disabled in production
+  if (isProduction && isBrowser) {
+    try {
+      // Check if the devConsole module is enabled in production
+      const runtimeConfig = window?.__NUXT__?.config?.public?.devConsole;
+      if (!runtimeConfig || !runtimeConfig.allowProduction) {
+        // Return no-op version when module is disabled in production
+        return createNoOpDevLog();
+      }
+    // eslint-disable-next-line no-unused-vars
+    } catch (_) {
+      // If there's any error accessing the config, return no-op version to be safe
+      return createNoOpDevLog();
+    }
+  }
+
+  // Regular implementation for development or when module is enabled in production
   const log = (...args) => createLog("log", args);
   const error = (...args) => createLog("error", args);
   const warn = (...args) => createLog("warn", args);

@@ -4,6 +4,7 @@ import {
   createResolver,
   addImportsDir,
   installModule,
+  addImports,
 } from "@nuxt/kit";
 
 export default defineNuxtModule({
@@ -40,6 +41,17 @@ export default defineNuxtModule({
     }
 
     try {
+      // Create resolver early so we can use it
+      const resolver = createResolver(import.meta.url);
+      
+      // Always register the useDevLog composable
+      // It will handle production mode internally
+      addImports({
+        name: 'useDevLog',
+        as: 'useDevLog',
+        from: resolver.resolve('./runtime/composables/useDevLog.js')
+      });
+
       if (!options.enabled) {
         return;
       }
@@ -52,8 +64,6 @@ export default defineNuxtModule({
         );
         return;
       }
-
-      const resolver = createResolver(import.meta.url);
 
       // Register module hooks
       nuxt.hook("devConsole:beforeInit", (_context) => {
@@ -100,6 +110,7 @@ export default defineNuxtModule({
 
       // Add composables with error handling
       try {
+        // Add the composables directory for any other composables
         await addImportsDir(resolver.resolve("./runtime/composables"));
       } catch (error) {
         console.error(
