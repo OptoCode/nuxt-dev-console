@@ -183,4 +183,4 @@ const useDevLog = () => {
   };
 };
 
-export default useDevLog;
+export { useDevLog };
