@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 🩹 Fixes
 
-- Fix export of useDevLog composable to use named export instead of default export, resolving import errors in consuming applications ([#issue](https://github.com/OptoCode/nuxt-dev-console/commit/))
+- Fix export of useDevLog composable to use named export instead of default export, resolving import errors in consuming applications ([#issue](https://github.com/OptoCode/nuxt-dev-console/commit/48775f2))
 
 ## v0.1.9
 
