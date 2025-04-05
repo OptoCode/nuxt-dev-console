@@ -9,7 +9,7 @@ export default defineNuxtConfig({
     position: "bottom-left",
     theme: "light",
     height: 600,
-    width: 500,
+    width: 800,
     maxLogHistory: 100,
     shortcuts: {
       toggle: "ctrl+shift+d",

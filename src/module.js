@@ -2,9 +2,8 @@ import {
   defineNuxtModule,
   addComponent,
   createResolver,
-  addImportsDir,
   installModule,
-  addImports,
+  addPlugin,
 } from "@nuxt/kit";
 
 export default defineNuxtModule({
@@ -21,7 +20,7 @@ export default defineNuxtModule({
     position: "bottom-left",
     theme: "light",
     height: 600,
-    width: 500,
+    width: 800,
     maxLogHistory: 100,
     shortcuts: {
       toggle: "ctrl+shift+d",
@@ -44,14 +43,13 @@ export default defineNuxtModule({
       // Create resolver early so we can use it
       const resolver = createResolver(import.meta.url);
       
-      // Always register the useDevLog composable
+      // Always register the dev-logger plugin regardless of enabled state
       // It will handle production mode internally
-      addImports({
-        name: 'useDevLog',
-        as: 'useDevLog',
-        from: resolver.resolve('./runtime/composables/useDevLog.js')
+      addPlugin({
+        src: resolver.resolve('./runtime/plugins/dev-logger'),
+        mode: 'client',
       });
-
+      
       if (!options.enabled) {
         return;
       }
@@ -103,18 +101,6 @@ export default defineNuxtModule({
       } catch (error) {
         console.error(
           "[nuxt-dev-console] Failed to register DevConsole component:",
-          error
-        );
-        throw error;
-      }
-
-      // Add composables with error handling
-      try {
-        // Add the composables directory for any other composables
-        await addImportsDir(resolver.resolve("./runtime/composables"));
-      } catch (error) {
-        console.error(
-          "[nuxt-dev-console] Failed to register composables:",
           error
         );
         throw error;

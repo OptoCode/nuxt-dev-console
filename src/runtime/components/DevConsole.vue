@@ -69,9 +69,7 @@ export const props = {
 
 <script setup>
 import { ref, onMounted, onUnmounted, computed, watch } from "vue";
-import { useRuntimeConfig } from "#app";
-import useDevLog from "../composables/useDevLog";
-import useNuxtErrorHandler from "../composables/useNuxtErrorHandler";
+import { useRuntimeConfig, useNuxtApp } from "#app";
 
 const config = useRuntimeConfig().public.devConsole;
 
@@ -172,16 +170,122 @@ const mergedProps = computed(() => {
   };
 });
 
-const {
-  logs,
-  _log,
-  _error,
-  _warn,
-  _info,
-  clear,
-  interceptConsole,
-  restoreConsole,
-} = useDevLog();
+// Implement logging functionality directly in the component
+const logs = ref([]);
+const maxLogSize = computed(() => mergedProps.value?.maxLogHistory || 100);
+let isLogging = false;
+let browserConsoleEnabled = true;
+let isConsoleIntercepted = false;
+let originalConsole = null;
+
+// Create log entry
+const createLog = (type, args) => {
+  try {
+    // Prevent recursive logging
+    if (isLogging) return;
+    isLogging = true;
+
+    // Log to browser console if enabled
+    if (browserConsoleEnabled) {
+      // Use original console methods to avoid recursion
+      if (originalConsole) {
+        originalConsole[type](...args);
+      }
+    }
+
+    const sanitizedArgs = args.map((arg) => {
+      if (arg instanceof Error) {
+        return {
+          name: arg.name,
+          message: arg.message,
+          stack: arg.stack,
+        };
+      }
+      if (arg === null) return "null";
+      if (arg === undefined) return "undefined";
+      if (typeof arg === "object") {
+        try {
+          return JSON.parse(JSON.stringify(arg));
+        } catch {
+          return String(arg);
+        }
+      }
+      return arg;
+    });
+
+    logs.value.push({
+      type,
+      content: sanitizedArgs,
+      timestamp: Date.now(),
+    });
+
+    // Trim logs if they exceed maxLogSize
+    if (logs.value.length > maxLogSize.value) {
+      logs.value = logs.value.slice(-maxLogSize.value);
+    }
+  } catch {
+    // Use the original console to avoid circular reference
+    if (!isLogging && originalConsole) {
+      originalConsole.error("Failed to create log:");
+    }
+  } finally {
+    isLogging = false;
+  }
+};
+
+// Log methods
+const _log = (...args) => createLog("log", args);
+const _error = (...args) => createLog("error", args);
+const _warn = (...args) => createLog("warn", args);
+const _info = (...args) => createLog("info", args);
+const clear = () => {
+  logs.value = [];
+};
+
+// Console interception
+const interceptConsole = () => {
+  if (isConsoleIntercepted) return;
+
+  // Store original methods with proper binding
+  originalConsole = {
+    log: console.log.bind(console),
+    error: console.error.bind(console),
+    warn: console.warn.bind(console),
+    info: console.info.bind(console),
+  };
+
+  // Override console methods
+  console.log = (...args) => {
+    createLog("log", args);
+    originalConsole.log(...args);
+  };
+
+  console.error = (...args) => {
+    createLog("error", args);
+    originalConsole.error(...args);
+  };
+
+  console.warn = (...args) => {
+    createLog("warn", args);
+    originalConsole.warn(...args);
+  };
+
+  console.info = (...args) => {
+    createLog("info", args);
+    originalConsole.info(...args);
+  };
+
+  isConsoleIntercepted = true;
+};
+
+const restoreConsole = () => {
+  if (!isConsoleIntercepted || !originalConsole) return;
+
+  Object.assign(console, originalConsole);
+  originalConsole = null;
+  isConsoleIntercepted = false;
+};
+
 const isVisible = ref(false);
 const isDev = process.env.NODE_ENV === "development" || config?.allowProduction;
 const searchQuery = ref("");
@@ -201,15 +305,8 @@ const currentTheme = computed(() => {
       ? "dark"
       : "light";
   }
-
   return themeValue;
 });
-
-// Update the theme toggle method
-const toggleTheme = () => {
-  const current = currentTheme.value;
-  localTheme.value = current === "dark" ? "light" : "dark";
-};
 
 // Add a watcher for merged props theme changes
 watch(
@@ -218,108 +315,51 @@ watch(
     if (newTheme) {
       localTheme.value = newTheme;
     }
-  },
-  { immediate: true }
-);
-
-// Position handling
-const dialogPosition = computed(() => {
-  // Ensure we have a valid position string
-  const defaultPosition = "bottom-right";
-  const position =
-    typeof mergedProps.value?.position === "string"
-      ? mergedProps.value.position
-      : defaultPosition;
-
-  // Split the position string safely
-  let vertical = "bottom";
-  let horizontal = "right";
-
-  if (position.includes("-")) {
-    const parts = position.split("-");
-    if (parts.length === 2) {
-      const [v, h] = parts;
-      if (["top", "bottom"].includes(v)) vertical = v;
-      if (["left", "right"].includes(h)) horizontal = h;
-    }
   }
-
-  return { vertical, horizontal };
-});
-
-// Log history management
-watch(
-  () => logs.value.length,
-  (newLength) => {
-    if (newLength > mergedProps.value.maxLogHistory) {
-      logs.value = logs.value.slice(-mergedProps.value.maxLogHistory);
-    }
-  },
-  { immediate: true }
 );
 
-const logTypes = [
-  { type: "log", icon: "mdi-console", color: "secondary" },
-  { type: "error", icon: "mdi-alert-circle", color: "error" },
-  { type: "warn", icon: "mdi-alert", color: "warning" },
-  { type: "info", icon: "mdi-information", color: "info" },
-];
+// Implement Nuxt error handling directly
+const setupNuxtErrorHandling = () => {
+  const nuxtApp = useNuxtApp();
+  
+  // Handle Nuxt errors
+  nuxtApp.hook("app:error", (err) => {
+    _error("[Nuxt Error]", err);
+  });
 
-// Filter logs based on minimum level
-const logLevels = {
-  info: 0,
-  warn: 1,
-  error: 2,
+  // Handle Nuxt warnings
+  nuxtApp.hook("app:warn", (msg) => {
+    _warn("[Nuxt Warning]", msg);
+  });
+
+  // Handle Vue errors
+  nuxtApp.vueApp.config.errorHandler = (err, instance, info) => {
+    _error("[Vue Error]", err, info);
+  };
+
+  // Handle Vue warnings
+  nuxtApp.vueApp.config.warnHandler = (msg, instance, trace) => {
+    _warn("[Vue Warning]", msg, trace);
+  };
 };
 
-const filteredLogs = computed(() => {
-  if (!logs.value) return [];
-
-  return logs.value.filter((log) => {
-    // Type filter
-    const matchesType = selectedTypes.value.includes(log.type);
-    if (!matchesType) return false;
-
-    // Level filter
-    const logLevel = logLevels[log.type] || 0;
-    const minLevel =
-      logLevels[mergedProps.value?.filters?.minLevel || "info"] || 0;
-    const matchesLevel = logLevel >= minLevel;
-    if (!matchesLevel) return false;
-
-    // Search filter
-    if (!searchQuery.value) return true;
-
-    const searchText = log.content
-      .map((item) => {
-        if (item === null) return "null";
-        if (item === undefined) return "undefined";
-        if (typeof item === "object") {
-          try {
-            return JSON.stringify(item);
-          } catch (e) {
-            return String(item);
-          }
-        }
-        return String(item);
-      })
-      .join(" ")
-      .toLowerCase();
-
-    return searchText.includes(searchQuery.value.toLowerCase());
-  });
-});
+const toggleTheme = () => {
+  const themes = ["dark", "light", "system"];
+  const currentIndex = themes.indexOf(localTheme.value);
+  const nextIndex = (currentIndex + 1) % themes.length;
+  localTheme.value = themes[nextIndex];
+};
 
 const getLogColor = (type) => {
   switch (type) {
     case "error":
-      return "error";
+      return "red";
     case "warn":
-      return "warning";
+      return "orange";
     case "info":
-      return "info";
+      return "blue";
     default:
-      return "secondary";
+      return currentTheme.value === "dark" ? "white" : "black";
   }
 };
 
@@ -331,44 +371,67 @@ const toggleVisibility = () => {
   isVisible.value = !isVisible.value;
 };
 
-const copyToClipboard = async (log) => {
+const copyToClipboard = (log) => {
   try {
     const content = log.content
-      .map((item) =>
-        typeof item === "object" ? JSON.stringify(item, null, 2) : item
-      )
+      .map((item) => {
+        if (typeof item === "object") {
+          return JSON.stringify(item, null, 2);
+        }
+        return String(item);
+      })
       .join(" ");
-    await navigator.clipboard.writeText(content);
-    snackbarText.value = "Log copied to clipboard";
+
+    navigator.clipboard.writeText(content);
+    snackbarText.value = "Copied to clipboard";
     snackbar.value = true;
-  } catch (err) {
-    console.error("Failed to copy to clipboard:", err);
+  } catch (error) {
+    console.error("Failed to copy:", error);
     snackbarText.value = "Failed to copy to clipboard";
     snackbar.value = true;
   }
 };
 
-// Keyboard shortcuts
 const handleKeyboardShortcut = (event) => {
-  const shortcutString = [];
-  if (event.ctrlKey) shortcutString.push("ctrl");
-  if (event.shiftKey) shortcutString.push("shift");
-  if (event.altKey) shortcutString.push("alt");
-  if (event.key !== "Control" && event.key !== "Shift" && event.key !== "Alt") {
-    shortcutString.push(event.key.toLowerCase());
+  // Check if we're in an input field
+  if (
+    event.target.tagName === "INPUT" ||
+    event.target.tagName === "TEXTAREA" ||
+    event.target.isContentEditable
+  ) {
+    return;
   }
 
-  const pressedShortcut = shortcutString.join("+");
+  const toggleKey = mergedProps.value?.shortcuts?.toggle || "ctrl+shift+d";
+  const clearKey = mergedProps.value?.shortcuts?.clear || "ctrl+l";
 
-  if (pressedShortcut === mergedProps.value.shortcuts.toggle) {
-    toggleVisibility();
-    event.preventDefault();
-  } else if (
-    pressedShortcut === mergedProps.value.shortcuts.clear &&
-    isVisible.value
+  // Parse the shortcut
+  const [toggleMod, toggleChar] = toggleKey.split("+");
+  const [clearMod, clearChar] = clearKey.split("+");
+
+  // Toggle console visibility
+  if (
+    (toggleMod === "ctrl" && event.ctrlKey) ||
+    (toggleMod === "alt" && event.altKey) ||
+    (toggleMod === "shift" && event.shiftKey)
   ) {
-    clearLogs();
-    event.preventDefault();
+    if (event.key.toLowerCase() === toggleChar) {
+      event.preventDefault();
+      toggleVisibility();
+    }
+  }
+
+  // Clear logs when console is visible
+  if (
+    isVisible.value &&
+    ((clearMod === "ctrl" && event.ctrlKey) ||
+      (clearMod === "alt" && event.altKey) ||
+      (clearMod === "shift" && event.shiftKey))
+  ) {
+    if (event.key.toLowerCase() === clearChar) {
+      event.preventDefault();
+      clearLogs();
+    }
   }
 };
 
@@ -376,14 +439,17 @@ onMounted(() => {
   interceptConsole();
   window.addEventListener("keydown", handleKeyboardShortcut);
   // Initialize Nuxt error handler
-  useNuxtErrorHandler();
+  setupNuxtErrorHandling();
+  
+  // Log initial message
+  _info("Dev Console initialized", {
+    version: config?.version || "unknown",
+    environment: config?.environment || process.env.NODE_ENV,
+  });
 });
 
 onUnmounted(() => {
-  // Only restore console when the app is actually unmounting
-  if (process.client && window.__NUXT_DEV_CONSOLE_UNMOUNTING__) {
-    restoreConsole();
-  }
+  restoreConsole();
   window.removeEventListener("keydown", handleKeyboardShortcut);
 });
 </script>
@@ -394,9 +460,13 @@ onUnmounted(() => {
       icon
       :style="{
         position: 'fixed',
-        [dialogPosition.vertical]: '16px',
-        [dialogPosition.horizontal]: '16px',
+        bottom: mergedProps?.position?.includes('bottom') ? '20px' : 'auto',
+        top: mergedProps?.position?.includes('top') ? '20px' : 'auto',
+        right: mergedProps?.position?.includes('right') ? '20px' : 'auto',
+        left: mergedProps?.position?.includes('left') ? '20px' : 'auto',
+        zIndex: 9999,
       }"
+      :color="currentTheme === 'dark' ? 'grey-darken-3' : 'primary'"
       @click="toggleVisibility"
     >
       <v-icon>mdi-console</v-icon>
@@ -405,48 +475,44 @@ onUnmounted(() => {
         :model-value="logs.length > 0"
         color="error"
         location="bottom end"
-      />
+      ></v-badge>
     </v-btn>
 
     <v-dialog
       v-model="isVisible"
-      :width="Number(mergedProps?.value?.width || 800)"
-      :height="Number(mergedProps?.value?.height || 600)"
-      :theme="currentTheme"
-      scrollable
-      :position="dialogPosition.vertical"
-      :location="dialogPosition.horizontal"
+      :width="Number(mergedProps?.width || 800)"
+      :persistent="false"
+      :retain-focus="false"
+      :scrim="false"
+      :fullscreen="false"
+      :no-click-animation="true"
+      :scrollable="true"
+      :content-class="`dev-console-dialog ${
+        mergedProps?.position || 'bottom-right'
+      }`"
     >
       <v-card :height="Number(mergedProps?.value?.height || 600)">
         <v-toolbar
           :color="currentTheme === 'dark' ? 'grey-darken-3' : 'primary'"
         >
           <v-toolbar-title>Development Console</v-toolbar-title>
-          <v-spacer />
+          <v-spacer></v-spacer>
           <v-btn icon @click="toggleTheme">
-            <v-icon>mdi-theme-light-dark</v-icon>
-            <v-tooltip activator="parent">
-              Theme: {{ currentTheme === "dark" ? "Dark" : "Light" }}
-            </v-tooltip>
+            <v-icon>
+              {{
+                currentTheme === "dark"
+                  ? "mdi-weather-night"
+                  : "mdi-weather-sunny"
+              }}
+            </v-icon>
           </v-btn>
           <v-btn icon @click="clearLogs">
             <v-icon>mdi-delete</v-icon>
-            <v-tooltip activator="parent">
-              Clear logs ({{
-                mergedProps?.value?.shortcuts?.clear || "ctrl+l"
-              }})
-            </v-tooltip>
           </v-btn>
-          <v-btn icon @click="isVisible = false">
+          <v-btn icon @click="toggleVisibility">
             <v-icon>mdi-close</v-icon>
-            <v-tooltip activator="parent">
-              Close ({{
-                mergedProps?.value?.shortcuts?.toggle || "ctrl+shift+d"
-              }})
-            </v-tooltip>
           </v-btn>
         </v-toolbar>
-
         <v-card-text class="pa-4">
           <div class="d-flex align-center gap-4 mb-4">
             <v-text-field
@@ -455,118 +521,88 @@ onUnmounted(() => {
               placeholder="Search logs..."
               prepend-inner-icon="mdi-magnify"
               hide-details
-              class="flex-grow-1 mr-4"
-              clearable
-            />
-            <v-btn-toggle
-              v-model="selectedTypes"
-              multiple
-              density="comfortable"
-              divided
-              class="flex-shrink-0"
-            >
-              <v-btn
-                v-for="type in logTypes"
-                :key="type.type"
-                :value="type.type"
-                variant="text"
+              :bg-color="currentTheme === 'dark' ? 'grey-darken-4' : 'grey-lighten-4'"
+              :theme="currentTheme"
+            ></v-text-field>
+
+            <v-chip-group v-model="selectedTypes" multiple>
+              <v-chip
+                filter
+                value="log"
+                :color="currentTheme === 'dark' ? 'grey' : 'grey-darken-1'"
+                :text-color="currentTheme === 'dark' ? 'white' : 'black'"
               >
-                <v-icon :icon="type.icon" />
-                <v-tooltip activator="parent" location="bottom">
-                  {{ type.type.toUpperCase() }}
-                </v-tooltip>
-              </v-btn>
-            </v-btn-toggle>
+                Log
+              </v-chip>
+              <v-chip filter value="error" color="red">Error</v-chip>
+              <v-chip filter value="warn" color="orange">Warn</v-chip>
+              <v-chip filter value="info" color="blue">Info</v-chip>
+            </v-chip-group>
           </div>
 
-          <div
-            v-if="
-              mergedProps.filters.showTimestamp ||
-              mergedProps.filters.showLogLevel
-            "
-            class="d-flex mb-2"
+          <v-sheet
+            :color="currentTheme === 'dark' ? 'grey-darken-4' : 'grey-lighten-4'"
+            class="log-container overflow-y-auto pa-2"
+            :theme="currentTheme"
+            :style="{ height: 'calc(100% - 60px)' }"
           >
-            <v-chip
-              v-if="mergedProps.filters.showLogLevel"
-              class="mr-2"
-              :color="
-                currentTheme === 'dark' ? 'grey-darken-3' : 'grey-lighten-3'
-              "
-              size="small"
-            >
-              Min Level: {{ mergedProps.filters.minLevel.toUpperCase() }}
-            </v-chip>
-            <v-chip
-              v-if="mergedProps.filters.showTimestamp"
-              :color="
-                currentTheme === 'dark' ? 'grey-darken-3' : 'grey-lighten-3'
-              "
-              size="small"
-            >
-              Showing Timestamps
-            </v-chip>
-          </div>
+            <template v-if="logs.length === 0">
+              <div class="text-center pa-4 text-body-1 text-medium-emphasis">
+                No logs yet. Start logging with console.log, console.error, etc.
+              </div>
+            </template>
 
-          <v-expansion-panels v-if="filteredLogs.length">
-            <v-expansion-panel
-              v-for="(log, index) in filteredLogs"
-              :key="index"
-              :color="getLogColor(log.type)"
-            >
-              <v-expansion-panel-title>
-                <div
-                  class="d-flex align-center justify-space-between w-100 gap-4"
-                >
-                  <div class="d-flex align-center flex-grow-1">
-                    <v-icon
-                      :icon="logTypes.find((t) => t.type === log.type)?.icon"
-                      color="white"
-                      class="mr-2"
-                      @click.stop="copyToClipboard(log)"
-                    />
-                    <v-tooltip activator="parent" location="left">
-                      {{ `Copy ${log.type.toUpperCase()} content` }}
-                    </v-tooltip>
-                    <span class="text-truncate">{{
-                      log.content[0]?.toString().slice(0, 50) +
-                      (log.content[0]?.toString().length > 50 ? "..." : "")
-                    }}</span>
+            <template v-else>
+              <div
+                v-for="(log, index) in logs.filter(
+                  (log) =>
+                    selectedTypes.includes(log.type) &&
+                    (searchQuery === '' ||
+                      JSON.stringify(log.content)
+                        .toLowerCase()
+                        .includes(searchQuery.toLowerCase()))
+                )"
+                :key="index"
+                class="log-entry pa-2 mb-2 rounded"
+                :class="{
+                  'log-error': log.type === 'error',
+                  'log-warn': log.type === 'warn',
+                  'log-info': log.type === 'info',
+                }"
+              >
+                <div class="d-flex align-center">
+                  <div
+                    class="log-type text-caption font-weight-bold mr-2"
+                    :style="{ color: getLogColor(log.type) }"
+                  >
+                    {{ log.type.toUpperCase() }}
                   </div>
                   <div
-                    class="text-caption font-weight-bold"
-                    style="min-width: 80px"
+                    v-if="mergedProps?.filters?.showTimestamp"
+                    class="log-timestamp text-caption text-medium-emphasis mr-2"
                   >
-                    {{
-                      new Date(log.timestamp).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                        second: "2-digit",
-                      })
-                    }}
+                    {{ new Date(log.timestamp).toLocaleTimeString() }}
                   </div>
+                  <v-spacer></v-spacer>
+                  <v-btn
+                    icon
+                    size="x-small"
+                    variant="text"
+                    @click="copyToClipboard(log)"
+                  >
+                    <v-icon size="small">mdi-content-copy</v-icon>
+                  </v-btn>
                 </div>
-              </v-expansion-panel-title>
-
-              <v-expansion-panel-text>
-                <pre class="my-0 text-body-2 text-wrap">{{
-                  log.content
-                    .map((item) =>
-                      typeof item === "object"
-                        ? JSON.stringify(item, null, 2)
-                        : item
-                    )
-                    .join(" ")
-                }}</pre>
-              </v-expansion-panel-text>
-            </v-expansion-panel>
-          </v-expansion-panels>
-
-          <v-alert
-            v-else-if="logs.length"
-            type="info"
-            text="No logs match your filters"
-          />
-          <v-alert v-else type="info" text="No console logs captured yet" />
+                <div class="log-content mt-1">
+                  <pre
+                    v-for="(content, i) in log.content"
+                    :key="i"
+                    class="mb-0 text-wrap"
+                  >{{ typeof content === 'object' ? JSON.stringify(content, null, 2) : content }}</pre>
+                </div>
+              </div>
+            </template>
+          </v-sheet>
         </v-card-text>
       </v-card>
     </v-dialog>
@@ -580,5 +616,55 @@ onUnmounted(() => {
 <style scoped>
 .v-dialog {
   margin: 0;
+  position: absolute;
+  overflow: hidden;
+}
+
+.dev-console-dialog.bottom-right {
+  bottom: 80px;
+  right: 20px;
+}
+
+.dev-console-dialog.bottom-left {
+  bottom: 80px;
+  left: 20px;
+}
+
+.dev-console-dialog.top-right {
+  top: 80px;
+  right: 20px;
+}
+
+.dev-console-dialog.top-left {
+  top: 80px;
+  left: 20px;
+}
+
+.log-container {
+  border-radius: 4px;
+}
+
+.log-entry {
+  border-left: 3px solid;
+}
+
+.log-entry.log-error {
+  border-left-color: red;
+  background-color: rgba(255, 0, 0, 0.05);
+}
+
+.log-entry.log-warn {
+  border-left-color: orange;
+  background-color: rgba(255, 165, 0, 0.05);
+}
+
+.log-entry.log-info {
+  border-left-color: blue;
+  background-color: rgba(0, 0, 255, 0.05);
+}
+
+pre {
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 </style>
