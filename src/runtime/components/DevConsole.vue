@@ -71,6 +71,19 @@ export const props = {
 import { ref, onMounted, onUnmounted, computed, watch } from "vue";
 import { useRuntimeConfig, useNuxtApp } from "#app";
 
+// Add debounce utility
+const debounce = (fn, wait) => {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      fn(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+};
+
 const config = useRuntimeConfig().public.devConsole;
 
 // Merge config with props
@@ -170,27 +183,99 @@ const mergedProps = computed(() => {
   };
 });
 
+// Add localStorage keys
+const STORAGE_KEYS = {
+  LOGS: 'dev-console-logs',
+  SEARCH_HISTORY: 'dev-console-search-history',
+  THEME: 'dev-console-theme'
+};
+
+// Modify logs ref to load from localStorage
+const logs = ref((() => {
+  try {
+    const savedLogs = localStorage.getItem(STORAGE_KEYS.LOGS);
+    return savedLogs ? JSON.parse(savedLogs) : [];
+  } catch (e) {
+    console.error('Failed to load logs from localStorage:', e);
+    return [];
+  }
+})());
+
+// Add watcher to persist logs
+watch(logs, (newLogs) => {
+  try {
+    localStorage.setItem(STORAGE_KEYS.LOGS, JSON.stringify(newLogs));
+  } catch (e) {
+    console.error('Failed to save logs to localStorage:', e);
+  }
+}, { deep: true });
+
+// Modify searchHistory to load from localStorage
+const searchHistory = ref((() => {
+  try {
+    const savedHistory = localStorage.getItem(STORAGE_KEYS.SEARCH_HISTORY);
+    return savedHistory ? JSON.parse(savedHistory) : [];
+  } catch (e) {
+    console.error('Failed to load search history from localStorage:', e);
+    return [];
+  }
+})());
+
+// Add watcher to persist search history
+watch(searchHistory, (newHistory) => {
+  try {
+    localStorage.setItem(STORAGE_KEYS.SEARCH_HISTORY, JSON.stringify(newHistory));
+  } catch (e) {
+    console.error('Failed to save search history to localStorage:', e);
+  }
+});
+
+// Create debounced search function
+const debouncedSearch = debounce(() => {
+  if (searchQuery.value.trim()) {
+    saveSearchToHistory(searchQuery.value);
+  }
+}, 300);
+
+// Update handleSearch to use debounced function
+const handleSearch = () => {
+  debouncedSearch();
+};
+
 // Implement logging functionality directly in the component
-const logs = ref([]);
 const maxLogSize = computed(() => mergedProps.value?.maxLogHistory || 100);
 let isLogging = false;
 let browserConsoleEnabled = true;
 let isConsoleIntercepted = false;
 let originalConsole = null;
 
-// Create log entry
-const createLog = (type, args) => {
+// Add new reactive references for search history and tags
+const selectedTags = ref([]);
+const customTags = ref(new Set());
+const MAX_SEARCH_HISTORY = 10;
+
+// Add function to save search to history
+const saveSearchToHistory = (query) => {
+  if (!query.trim() || searchHistory.value.includes(query)) return;
+  searchHistory.value.unshift(query);
+  if (searchHistory.value.length > MAX_SEARCH_HISTORY) {
+    searchHistory.value.pop();
+  }
+};
+
+// Add function to apply search from history
+const applyHistorySearch = (query) => {
+  searchQuery.value = query;
+};
+
+// Modify createLog to include tags
+const createLog = (type, args, tags = []) => {
   try {
-    // Prevent recursive logging
     if (isLogging) return;
     isLogging = true;
 
-    // Log to browser console if enabled
-    if (browserConsoleEnabled) {
-      // Use original console methods to avoid recursion
-      if (originalConsole) {
-        originalConsole[type](...args);
-      }
+    if (browserConsoleEnabled && originalConsole) {
+      originalConsole[type](...args);
     }
 
     const sanitizedArgs = args.map((arg) => {
@@ -213,24 +298,72 @@ const createLog = (type, args) => {
       return arg;
     });
 
+    // Add any new tags to our set of known tags
+    tags.forEach(tag => customTags.value.add(tag));
+
     logs.value.push({
       type,
       content: sanitizedArgs,
       timestamp: Date.now(),
+      tags: tags,
     });
 
-    // Trim logs if they exceed maxLogSize
     if (logs.value.length > maxLogSize.value) {
       logs.value = logs.value.slice(-maxLogSize.value);
     }
   } catch {
-    // Use the original console to avoid circular reference
     if (!isLogging && originalConsole) {
       originalConsole.error("Failed to create log:");
     }
   } finally {
     isLogging = false;
   }
+};
+
+// Add new log methods with tag support
+const logWithTags = (tags, ...args) => createLog("log", args, tags);
+const errorWithTags = (tags, ...args) => createLog("error", args, tags);
+const warnWithTags = (tags, ...args) => createLog("warn", args, tags);
+const infoWithTags = (tags, ...args) => createLog("info", args, tags);
+
+// Add computed for filtered logs
+const filteredLogs = computed(() => {
+  return logs.value.filter(log => {
+    // Type filter
+    if (!selectedTypes.value.includes(log.type)) return false;
+    
+    // Tag filter
+    if (selectedTags.value.length > 0 && (!log.tags || !selectedTags.value.some(tag => log.tags.includes(tag)))) {
+      return false;
+    }
+    
+    // Search query filter
+    if (searchQuery.value) {
+      const query = searchQuery.value.toLowerCase();
+      const content = log.content.map(item => 
+        typeof item === 'object' ? JSON.stringify(item) : String(item)
+      ).join(' ').toLowerCase();
+      
+      return content.includes(query);
+    }
+    
+    return true;
+  });
+});
+
+// Add function to toggle tag selection
+const toggleTag = (tag) => {
+  const index = selectedTags.value.indexOf(tag);
+  if (index === -1) {
+    selectedTags.value.push(tag);
+  } else {
+    selectedTags.value.splice(index, 1);
+  }
+};
+
+// Add function to clear tag selection
+const clearTagSelection = () => {
+  selectedTags.value = [];
 };
 
 // Log methods
@@ -240,39 +373,164 @@ const _warn = (...args) => createLog("warn", args);
 const _info = (...args) => createLog("info", args);
 const clear = () => {
   logs.value = [];
+  // Ensure console interception is still active after clearing
+  if (!isConsoleIntercepted) {
+    interceptConsole();
+  }
 };
 
-// Console interception
-const interceptConsole = () => {
-  if (isConsoleIntercepted) return;
+// Add new methods for log groups and file saving
+const createLogGroup = (label, collapsed = false) => {
+  const groupId = Date.now().toString();
+  logs.value.push({
+    type: "group",
+    content: [label],
+    timestamp: Date.now(),
+    groupId,
+    collapsed,
+    isGroup: true
+  });
+  return groupId;
+};
 
-  // Store original methods with proper binding
+const endLogGroup = () => {
+  logs.value.push({
+    type: "groupEnd",
+    content: [],
+    timestamp: Date.now(),
+    isGroup: true
+  });
+};
+
+const toggleLogGroup = (groupId) => {
+  const group = logs.value.find(log => log.groupId === groupId);
+  if (group) {
+    group.collapsed = !group.collapsed;
+  }
+};
+
+const saveLogsToFile = (format = 'txt') => {
+  try {
+    let content;
+    let mimeType;
+    let extension;
+
+    switch (format) {
+      case 'json':
+        content = JSON.stringify(logs.value, null, 2);
+        mimeType = 'application/json';
+        extension = 'json';
+        break;
+      case 'csv':
+        content = logs.value.map(log => {
+          const timestamp = new Date(log.timestamp).toISOString();
+          const content = log.content.map(item => 
+            typeof item === 'object' ? JSON.stringify(item) : String(item)
+          ).join(' ');
+          return `${timestamp},${log.type},${content}`;
+        }).join('\n');
+        content = `Timestamp,Type,Content\n${content}`;
+        mimeType = 'text/csv';
+        extension = 'csv';
+        break;
+      default: // txt
+        content = logs.value.map(log => {
+          const timestamp = new Date(log.timestamp).toISOString();
+          const content = log.content.map(item => 
+            typeof item === 'object' ? JSON.stringify(item, null, 2) : String(item)
+          ).join(' ');
+          return `[${timestamp}] [${log.type.toUpperCase()}] ${content}`;
+        }).join('\n');
+        mimeType = 'text/plain';
+        extension = 'txt';
+    }
+
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `dev-console-logs-${new Date().toISOString().slice(0, 10)}.${extension}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    snackbarText.value = "Logs saved successfully";
+    snackbar.value = true;
+  } catch (error) {
+    console.error("Failed to save logs:", error);
+    snackbarText.value = "Failed to save logs";
+    snackbar.value = true;
+  }
+};
+
+// Extend console interception to include groups
+const interceptConsole = () => {
+  if (isConsoleIntercepted) {
+    if (console.log !== originalConsole?.log || !originalConsole) {
+      restoreConsole();
+    } else {
+      return;
+    }
+  }
+
   originalConsole = {
     log: console.log.bind(console),
     error: console.error.bind(console),
     warn: console.warn.bind(console),
     info: console.info.bind(console),
+    group: console.group.bind(console),
+    groupCollapsed: console.groupCollapsed.bind(console),
+    groupEnd: console.groupEnd.bind(console)
   };
 
-  // Override console methods
   console.log = (...args) => {
     createLog("log", args);
-    originalConsole.log(...args);
+    if (originalConsole?.log) {
+      originalConsole.log(...args);
+    }
   };
 
   console.error = (...args) => {
     createLog("error", args);
-    originalConsole.error(...args);
+    if (originalConsole?.error) {
+      originalConsole.error(...args);
+    }
   };
 
   console.warn = (...args) => {
     createLog("warn", args);
-    originalConsole.warn(...args);
+    if (originalConsole?.warn) {
+      originalConsole.warn(...args);
+    }
   };
 
   console.info = (...args) => {
     createLog("info", args);
-    originalConsole.info(...args);
+    if (originalConsole?.info) {
+      originalConsole.info(...args);
+    }
+  };
+
+  console.group = (label) => {
+    createLogGroup(label, false);
+    if (originalConsole?.group) {
+      originalConsole.group(label);
+    }
+  };
+
+  console.groupCollapsed = (label) => {
+    createLogGroup(label, true);
+    if (originalConsole?.groupCollapsed) {
+      originalConsole.groupCollapsed(label);
+    }
+  };
+
+  console.groupEnd = () => {
+    endLogGroup();
+    if (originalConsole?.groupEnd) {
+      originalConsole.groupEnd();
+    }
   };
 
   isConsoleIntercepted = true;
@@ -281,7 +539,12 @@ const interceptConsole = () => {
 const restoreConsole = () => {
   if (!isConsoleIntercepted || !originalConsole) return;
 
-  Object.assign(console, originalConsole);
+  // Restore original methods one by one to ensure we don't lose any
+  console.log = originalConsole.log;
+  console.error = originalConsole.error;
+  console.warn = originalConsole.warn;
+  console.info = originalConsole.info;
+
   originalConsole = null;
   isConsoleIntercepted = false;
 };
@@ -292,6 +555,26 @@ const searchQuery = ref("");
 const selectedTypes = ref(["log", "error", "warn", "info"]);
 const snackbar = ref(false);
 const snackbarText = ref("");
+
+// Add state for expansion panels
+const expandedPanels = ref([]);
+const allExpanded = ref(false);
+
+const toggleAllPanels = () => {
+  if (allExpanded.value) {
+    expandedPanels.value = [];
+  } else {
+    expandedPanels.value = filteredLogs.value.map((_, index) => index);
+  }
+  allExpanded.value = !allExpanded.value;
+};
+
+// Add a watcher to ensure console interception when visibility changes
+watch(isVisible, (newValue) => {
+  if (newValue && !isConsoleIntercepted) {
+    interceptConsole();
+  }
+});
 
 // First, update the theme state management
 const localTheme = ref(mergedProps.value?.theme || "dark");
@@ -435,6 +718,17 @@ const handleKeyboardShortcut = (event) => {
   }
 };
 
+const getLogPreview = (log) => {
+  return log.content.map(item => {
+    if (typeof item === 'object') {
+      if (item === null) return 'null';
+      if (Array.isArray(item)) return `Array(${item.length})`;
+      return `Object{${Object.keys(item).slice(0, 3).join(', ')}}`;
+    }
+    return String(item);
+  }).join(' ').slice(0, 60) + (log.content.join(' ').length > 60 ? '...' : '');
+};
+
 onMounted(() => {
   interceptConsole();
   window.addEventListener("keydown", handleKeyboardShortcut);
@@ -491,123 +785,260 @@ onUnmounted(() => {
         mergedProps?.position || 'bottom-right'
       }`"
     >
-      <v-card :height="Number(mergedProps?.value?.height || 600)">
+      <v-card :height="Number(mergedProps?.height || 600)" elevation="2">
+        <!-- Toolbar -->
         <v-toolbar
           :color="currentTheme === 'dark' ? 'grey-darken-3' : 'primary'"
+          density="comfortable"
+          flat
         >
           <v-toolbar-title>Development Console</v-toolbar-title>
           <v-spacer></v-spacer>
-          <v-btn icon @click="toggleTheme">
-            <v-icon>
-              {{
-                currentTheme === "dark"
-                  ? "mdi-weather-night"
-                  : "mdi-weather-sunny"
-              }}
-            </v-icon>
-          </v-btn>
-          <v-btn icon @click="clearLogs">
-            <v-icon>mdi-delete</v-icon>
-          </v-btn>
-          <v-btn icon @click="toggleVisibility">
-            <v-icon>mdi-close</v-icon>
-          </v-btn>
+          <v-toolbar-items>
+            <v-btn 
+              :icon="allExpanded ? 'mdi-unfold-less-horizontal' : 'mdi-unfold-more-horizontal'"
+              @click="toggleAllPanels"
+              :title="allExpanded ? 'Collapse All' : 'Expand All'"
+            ></v-btn>
+            
+            <v-menu location="bottom end">
+              <template v-slot:activator="{ props }">
+                <v-btn icon="mdi-content-save" v-bind="props"></v-btn>
+              </template>
+              <v-list :theme="currentTheme" density="compact" nav>
+                <v-list-item
+                  prepend-icon="mdi-file-document-outline"
+                  title="Save as TXT"
+                  @click="saveLogsToFile('txt')"
+                ></v-list-item>
+                <v-list-item
+                  prepend-icon="mdi-code-json"
+                  title="Save as JSON"
+                  @click="saveLogsToFile('json')"
+                ></v-list-item>
+                <v-list-item
+                  prepend-icon="mdi-file-delimited-outline"
+                  title="Save as CSV"
+                  @click="saveLogsToFile('csv')"
+                ></v-list-item>
+              </v-list>
+            </v-menu>
+
+            <v-btn 
+              :icon="currentTheme === 'dark' ? 'mdi-weather-night' : 'mdi-weather-sunny'"
+              @click="toggleTheme"
+            ></v-btn>
+            <v-btn icon="mdi-delete" @click="clearLogs"></v-btn>
+            <v-btn icon="mdi-close" @click="toggleVisibility"></v-btn>
+          </v-toolbar-items>
         </v-toolbar>
-        <v-card-text class="pa-4">
-          <div class="d-flex align-center gap-4 mb-4">
-            <v-text-field
-              v-model="searchQuery"
-              density="compact"
-              placeholder="Search logs..."
-              prepend-inner-icon="mdi-magnify"
-              hide-details
-              :bg-color="currentTheme === 'dark' ? 'grey-darken-4' : 'grey-lighten-4'"
-              :theme="currentTheme"
-            ></v-text-field>
 
-            <v-chip-group v-model="selectedTypes" multiple>
-              <v-chip
-                filter
-                value="log"
-                :color="currentTheme === 'dark' ? 'grey' : 'grey-darken-1'"
-                :text-color="currentTheme === 'dark' ? 'white' : 'black'"
-              >
-                Log
-              </v-chip>
-              <v-chip filter value="error" color="red">Error</v-chip>
-              <v-chip filter value="warn" color="orange">Warn</v-chip>
-              <v-chip filter value="info" color="blue">Info</v-chip>
-            </v-chip-group>
-          </div>
+        <!-- Main Content -->
+        <v-main class="overflow-hidden">
+          <v-container fluid class="pa-2">
+            <!-- Search and Filters Row -->
+            <v-row dense>
+              <v-col cols="12" sm="6" lg="6" class="pr-sm-2">
+                <v-text-field
+                  v-model="searchQuery"
+                  density="compact"
+                  placeholder="Search logs..."
+                  prepend-icon="mdi-magnify"
+                  hide-details
+                  variant="outlined"
+                  :bg-color="currentTheme === 'dark' ? 'grey-darken-4' : 'grey-lighten-4'"
+                  :theme="currentTheme"
+                  @keyup.enter="handleSearch"
+                  class="mb-2 mb-sm-0"
+                >
+                  <template v-slot:append>
+                    <v-menu v-if="searchHistory.length > 0" location="bottom end">
+                      <template v-slot:activator="{ props }">
+                        <v-btn
+                          icon="mdi-history"
+                          variant="text"
+                          density="compact"
+                          v-bind="props"
+                        ></v-btn>
+                      </template>
+                      <v-list :theme="currentTheme" density="compact" nav>
+                        <v-list-item
+                          v-for="(query, index) in searchHistory"
+                          :key="index"
+                          :title="query"
+                          @click="applyHistorySearch(query)"
+                        ></v-list-item>
+                      </v-list>
+                    </v-menu>
+                  </template>
+                </v-text-field>
+              </v-col>
+              <v-col cols="12" sm="6" lg="6">
+                <v-chip-group v-model="selectedTypes" multiple show-arrows class="flex-wrap">
+                  <v-chip
+                    filter
+                    variant="elevated"
+                    value="log"
+                    :color="currentTheme === 'dark' ? 'grey' : 'grey-darken-1'"
+                    :text-color="currentTheme === 'dark' ? 'white' : 'black'"
+                    size="small"
+                  >
+                    Log
+                  </v-chip>
+                  <v-chip filter value="error" color="error" size="small">Error</v-chip>
+                  <v-chip filter value="warn" color="warning" size="small">Warn</v-chip>
+                  <v-chip filter value="info" color="info" size="small">Info</v-chip>
+                </v-chip-group>
+              </v-col>
+            </v-row>
 
-          <v-sheet
-            :color="currentTheme === 'dark' ? 'grey-darken-4' : 'grey-lighten-4'"
-            class="log-container overflow-y-auto pa-2"
-            :theme="currentTheme"
-            :style="{ height: 'calc(100% - 60px)' }"
-          >
-            <template v-if="logs.length === 0">
-              <div class="text-center pa-4 text-body-1 text-medium-emphasis">
-                No logs yet. Start logging with console.log, console.error, etc.
-              </div>
-            </template>
-
-            <template v-else>
-              <div
-                v-for="(log, index) in logs.filter(
-                  (log) =>
-                    selectedTypes.includes(log.type) &&
-                    (searchQuery === '' ||
-                      JSON.stringify(log.content)
-                        .toLowerCase()
-                        .includes(searchQuery.toLowerCase()))
-                )"
-                :key="index"
-                class="log-entry pa-2 mb-2 rounded"
-                :class="{
-                  'log-error': log.type === 'error',
-                  'log-warn': log.type === 'warn',
-                  'log-info': log.type === 'info',
-                }"
-              >
+            <!-- Tags Row -->
+            <v-row v-if="customTags.size > 0" dense class="mt-1">
+              <v-col cols="12">
                 <div class="d-flex align-center">
-                  <div
-                    class="log-type text-caption font-weight-bold mr-2"
-                    :style="{ color: getLogColor(log.type) }"
-                  >
-                    {{ log.type.toUpperCase() }}
-                  </div>
-                  <div
-                    v-if="mergedProps?.filters?.showTimestamp"
-                    class="log-timestamp text-caption text-medium-emphasis mr-2"
-                  >
-                    {{ new Date(log.timestamp).toLocaleTimeString() }}
-                  </div>
-                  <v-spacer></v-spacer>
+                  <span class="text-caption text-medium-emphasis mr-2">Tags:</span>
+                  <v-chip-group v-model="selectedTags" multiple show-arrows class="flex-grow-1">
+                    <v-chip
+                      v-for="tag in Array.from(customTags)"
+                      :key="tag"
+                      filter
+                      variant="elevated"
+                      :value="tag"
+                      :color="currentTheme === 'dark' ? 'primary' : 'primary-lighten-1'"
+                      size="x-small"
+                    >
+                      {{ tag }}
+                    </v-chip>
+                  </v-chip-group>
                   <v-btn
-                    icon
-                    size="x-small"
+                    v-if="selectedTags.length > 0"
+                    icon="mdi-close"
                     variant="text"
-                    @click="copyToClipboard(log)"
-                  >
-                    <v-icon size="small">mdi-content-copy</v-icon>
-                  </v-btn>
+                    density="compact"
+                    size="x-small"
+                    @click="clearTagSelection"
+                  ></v-btn>
                 </div>
-                <div class="log-content mt-1">
-                  <pre
-                    v-for="(content, i) in log.content"
-                    :key="i"
-                    class="mb-0 text-wrap"
-                  >{{ typeof content === 'object' ? JSON.stringify(content, null, 2) : content }}</pre>
-                </div>
-              </div>
-            </template>
-          </v-sheet>
-        </v-card-text>
+              </v-col>
+            </v-row>
+
+            <!-- Logs Container -->
+            <v-row dense class="mt-2">
+              <v-col cols="12">
+                <v-card
+                  :color="currentTheme === 'dark' ? 'grey-darken-4' : 'grey-lighten-4'"
+                  :theme="currentTheme"
+                  class="log-container"
+                  flat
+                  variant="tonal"
+                >
+                  <v-card-text class="pa-1">
+                    <template v-if="logs.length === 0">
+                      <v-sheet class="d-flex align-center justify-center" :height="200">
+                        <span class="text-medium-emphasis">
+                          No logs yet. Start logging with console.log, console.error, etc.
+                        </span>
+                      </v-sheet>
+                    </template>
+
+                    <template v-else>
+                      <v-virtual-scroll
+                        :items="filteredLogs"
+                        :height="Number(mergedProps?.height || 600) - 200"
+                        :item-height="56"
+                        class="px-2"
+                      >
+                        <template v-slot:default="{ item: log, index }">
+                          <v-expansion-panels 
+                            v-model="expandedPanels"
+                            class="mb-1" 
+                            multiple
+                            variant="accordion"
+                          >
+                            <v-expansion-panel
+                              :value="index"
+                              :class="{
+                                'log-error': log.type === 'error',
+                                'log-warn': log.type === 'warn',
+                                'log-info': log.type === 'info',
+                                'log-group': log.isGroup,
+                                'ml-4': log.type !== 'group' && log.type !== 'groupEnd'
+                              }"
+                            >
+                              <v-expansion-panel-title class="py-1 px-3">
+                                <v-row no-gutters align="center" class="flex-nowrap w-100">
+                                  <v-col cols="auto" class="mr-2 flex-shrink-0">
+                                    <div
+                                      class="log-type text-caption font-weight-bold"
+                                      :style="{ color: getLogColor(log.type) }"
+                                    >
+                                      {{ log.type.toUpperCase() }}
+                                    </div>
+                                  </v-col>
+                                  
+                                  <v-col cols="auto" class="mr-2 flex-shrink-0" v-if="mergedProps?.filters?.showTimestamp">
+                                    <div class="log-timestamp text-caption text-medium-emphasis">
+                                      {{ new Date(log.timestamp).toLocaleTimeString() }}
+                                    </div>
+                                  </v-col>
+
+                                  <v-col class="min-width-0 flex-grow-1">
+                                    <div class="d-flex align-center overflow-hidden">
+                                      <span class="text-truncate log-preview">
+                                        {{ getLogPreview(log) }}
+                                      </span>
+                                    </div>
+                                  </v-col>
+
+                                  <v-col cols="auto" class="d-flex align-center ml-2 flex-shrink-0">
+                                    <div v-if="log.tags && log.tags.length > 0" class="mr-2">
+                                      <v-chip
+                                        v-for="tag in log.tags"
+                                        :key="tag"
+                                        size="x-small"
+                                        variant="flat"
+                                        class="mr-1"
+                                        :color="currentTheme === 'dark' ? 'primary' : 'primary-lighten-1'"
+                                      >
+                                        {{ tag }}
+                                      </v-chip>
+                                    </div>
+                                    <v-btn
+                                      icon="mdi-content-copy"
+                                      size="x-small"
+                                      variant="text"
+                                      @click.stop="copyToClipboard(log)"
+                                    ></v-btn>
+                                  </v-col>
+                                </v-row>
+                              </v-expansion-panel-title>
+                              <v-expansion-panel-text class="px-3">
+                                <div v-for="(content, i) in log.content" :key="i">
+                                  <pre v-if="typeof content === 'object'" class="mb-2 pa-2 rounded bg-grey-darken-4">{{ JSON.stringify(content, null, 2) }}</pre>
+                                  <div v-else class="mb-2">{{ content }}</div>
+                                </div>
+                              </v-expansion-panel-text>
+                            </v-expansion-panel>
+                          </v-expansion-panels>
+                        </template>
+                      </v-virtual-scroll>
+                    </template>
+                  </v-card-text>
+                </v-card>
+              </v-col>
+            </v-row>
+          </v-container>
+        </v-main>
       </v-card>
     </v-dialog>
 
-    <v-snackbar v-model="snackbar" :timeout="2000" location="bottom">
+    <v-snackbar 
+      v-model="snackbar" 
+      :timeout="2000" 
+      location="bottom" 
+      variant="tonal"
+      color="primary"
+    >
       {{ snackbarText }}
     </v-snackbar>
   </div>
@@ -642,29 +1073,145 @@ onUnmounted(() => {
 
 .log-container {
   border-radius: 4px;
+  padding: 8px;
+  height: 100%;
 }
 
 .log-entry {
   border-left: 3px solid;
+  transition: background-color 0.2s ease;
 }
 
-.log-entry.log-error {
-  border-left-color: red;
+.log-entry:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.log-error {
+  border-left-color: red !important;
   background-color: rgba(255, 0, 0, 0.05);
 }
 
-.log-entry.log-warn {
-  border-left-color: orange;
+.log-warn {
+  border-left-color: orange !important;
   background-color: rgba(255, 165, 0, 0.05);
 }
 
-.log-entry.log-info {
-  border-left-color: blue;
+.log-info {
+  border-left-color: blue !important;
   background-color: rgba(0, 0, 255, 0.05);
 }
 
 pre {
   white-space: pre-wrap;
   word-break: break-word;
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.v-virtual-scroll {
+  width: 100%;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(128, 128, 128, 0.5) transparent;
+}
+
+.v-virtual-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.v-virtual-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.v-virtual-scroll::-webkit-scrollbar-thumb {
+  background-color: rgba(128, 128, 128, 0.5);
+  border-radius: 4px;
+}
+
+.log-group {
+  border-left: 3px solid #666 !important;
+  background-color: rgba(128, 128, 128, 0.05);
+}
+
+.ml-4 {
+  margin-left: 1rem;
+}
+
+.log-preview {
+  font-family: monospace;
+  font-size: 0.875rem;
+  line-height: 1.2;
+  max-width: 50vw;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.v-row {
+  margin: 0;
+}
+
+.v-col {
+  padding: 0;
+}
+
+.v-expansion-panels {
+  margin-bottom: 4px !important;
+  box-shadow: none;
+  width: 100%;
+}
+
+.v-expansion-panel {
+  margin-bottom: 4px !important;
+  width: 100%;
+}
+
+.v-expansion-panel-title {
+  min-height: 40px !important;
+  width: 100% !important;
+}
+
+.v-expansion-panel-title__content {
+  width: 100% !important;
+  overflow: hidden !important;
+}
+
+.log-preview {
+  font-family: monospace;
+  font-size: 0.875rem;
+  line-height: 1.2;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.flex-shrink-0 {
+  flex-shrink: 0 !important;
+}
+
+.flex-grow-1 {
+  flex-grow: 1 !important;
+}
+
+.overflow-hidden {
+  overflow: hidden !important;
+}
+
+.v-expansion-panel-text__wrapper {
+  padding: 8px 0 !important;
+}
+
+.flex-nowrap {
+  flex-wrap: nowrap !important;
+}
+
+.min-width-0 {
+  min-width: 0 !important;
+}
+
+.log-preview-container {
+  max-width: 60%;
+  overflow: hidden;
 }
 </style>
+

@@ -30,7 +30,7 @@ export default defineNuxtModule({
     filters: {
       showTimestamp: true,
       showLogLevel: true,
-      minLevel: "info",
+      minLevel: "info", // Default minimum log level to show
     },
   },
   async setup(options, nuxt) {
