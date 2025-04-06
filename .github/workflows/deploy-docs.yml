@@ -5,10 +5,14 @@ on:
     branches:
       - main
       - master
+  # Allow manual trigger
+  workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -26,10 +30,17 @@ jobs:
       - name: Build documentation
         run: npm run docs:build
       
+      - name: List build output
+        run: ls -la docs/.vitepress/dist
+      
+      - name: Create .nojekyll file
+        run: touch docs/.vitepress/dist/.nojekyll
+      
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: docs/.vitepress/dist
           # Remove previous build files
-          force_orphan: true 
+          force_orphan: true
+          commit_message: "docs: deploy documentation" 
