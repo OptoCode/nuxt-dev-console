@@ -6,7 +6,7 @@
 
 A powerful development console for Nuxt 3 applications that provides real-time monitoring, advanced logging, filtering, and debugging capabilities with zero production overhead.
 
-[View Demo](https://demo-link) · [Report Bug](https://github.com/OptoCode/nuxt-dev-console/issues) · [Request Feature](https://github.com/OptoCode/nuxt-dev-console/issues)
+[View Demo](https://optocode.github.io/nuxt-dev-console/) · [Report Bug](https://github.com/OptoCode/nuxt-dev-console/issues) · [Request Feature](https://github.com/OptoCode/nuxt-dev-console/issues)
 
 ## ✨ Features
 

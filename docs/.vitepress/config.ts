@@ -9,7 +9,6 @@ export default defineConfig({
     nav: [
       { text: 'Home', link: '/' },
       { text: 'Guide', link: '/guide/' },
-      { text: 'Config', link: '/config/' },
       { text: 'GitHub', link: 'https://github.com/OptoCode/nuxt-dev-console' }
     ],
     sidebar: [
@@ -32,8 +31,8 @@ export default defineConfig({
       {
         text: 'Advanced',
         items: [
-          { text: 'Theme Customization', link: '/advanced/theming' },
-          { text: 'TypeScript Support', link: '/advanced/typescript' },
+          { text: 'Theme Customization', link: '/advanced/theme-customization' },
+          { text: 'TypeScript Support', link: '/advanced/typescript-support' },
           { text: 'Best Practices', link: '/advanced/best-practices' }
         ]
       }

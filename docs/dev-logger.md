@@ -224,8 +224,8 @@ The logger implements robust error handling:
 
 ## Contributing
 
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+We welcome contributions! Please see our [Contributing Guide](https://github.com/optocode/nuxt-dev-console/blob/main/CONTRIBUTING.md) for details.
 
 ## License
 
-[MIT License](LICENSE)
+[MIT License](https://github.com/optocode/nuxt-dev-console/blob/main/LICENSE)
