@@ -119,17 +119,43 @@
                 </v-btn>
               </v-col>
             </v-row>
+
+            <!-- Tagged Logs -->
+            <h2 class="text-h6 mb-2 mt-4">Tagged Logs</h2>
+            <v-row>
+              <v-col cols="12" sm="6" md="3">
+                <v-btn color="primary" block @click="testTaggedLog">
+                  Tagged Log
+                </v-btn>
+              </v-col>
+              <v-col cols="12" sm="6" md="3">
+                <v-btn color="error" block @click="testTaggedError">
+                  Tagged Error
+                </v-btn>
+              </v-col>
+              <v-col cols="12" sm="6" md="3">
+                <v-btn color="warning" block @click="testTaggedWarn">
+                  Tagged Warning
+                </v-btn>
+              </v-col>
+              <v-col cols="12" sm="6" md="3">
+                <v-btn color="info" block @click="testTaggedInfo">
+                  Tagged Info
+                </v-btn>
+              </v-col>
+            </v-row>
           </v-col>
         </v-row>
       </v-container>
     </v-main>
-    <dev-console />
+    <DevConsole ref="devConsole" />
   </v-app>
 </template>
 
 <script setup>
 import { useNuxtApp } from "#app";
 import { ref, onMounted } from "vue";
+import { DevConsole } from "#components";
 
 defineOptions({
   name: "DevConsoleIndex",
@@ -137,6 +163,7 @@ defineOptions({
 
 const nuxtApp = useNuxtApp();
 const devLogger = ref(null);
+const devConsole = ref(null); // Reference to DevConsole component
 
 // Create a fallback logger in case the plugin isn't loaded yet
 const fallbackLogger = {
@@ -323,6 +350,23 @@ const triggerAsyncError = async () => {
       reject(new Error("This is an async error"));
     }, 100);
   });
+};
+
+// Tagged logging examples
+const testTaggedLog = () => {
+  devConsole.value?.logWithTags(['test', 'demo'], 'This is a tagged log message', { data: 'test data' });
+};
+
+const testTaggedError = () => {
+  devConsole.value?.errorWithTags(['error', 'api'], 'This is a tagged error message', new Error('API Error'));
+};
+
+const testTaggedWarn = () => {
+  devConsole.value?.warnWithTags(['warning', 'performance'], 'This is a tagged warning message', { latency: '500ms' });
+};
+
+const testTaggedInfo = () => {
+  devConsole.value?.infoWithTags(['info', 'user'], 'This is a tagged info message', { userId: 123 });
 };
 </script>
 

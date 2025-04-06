@@ -64,18 +64,81 @@ The Dev Console automatically manages log persistence:
 
 ### Tags and Filtering
 
-Use tags to organize and filter your logs:
+Use tags to organize and filter your logs. First, get a reference to the DevConsole component:
+
+```vue
+<template>
+  <DevConsole ref="devConsole" />
+</template>
+
+<script setup>
+import { ref } from 'vue'
+const devConsole = ref(null)
+</script>
+```
+
+Then use the tag-enabled logging methods:
 
 ```js
-// In your components
-$devLogger.logWithTags(['auth', 'user'], 'User authenticated');
-$devLogger.errorWithTags(['api'], 'API request failed');
+// Basic tagged logging
+devConsole.value.logWithTags(['user', 'auth'], 'User logged in', { userId: 123 });
+devConsole.value.errorWithTags(['api', 'error'], 'API request failed', new Error('Network error'));
+devConsole.value.warnWithTags(['performance'], 'Slow operation detected', { latency: '500ms' });
+devConsole.value.infoWithTags(['config'], 'Config loaded', { environment: 'production' });
 
-// Filter logs in the console UI
-// - Click on tags to filter
-// - Use the search bar for text search
-// - Combine multiple tags for advanced filtering
+// Multiple tags for better categorization
+devConsole.value.logWithTags(
+  ['auth', 'security', 'user'],
+  'Two-factor authentication enabled',
+  { method: 'SMS', userId: 123 }
+);
+
+// Tags for feature tracking
+devConsole.value.logWithTags(
+  ['feature-x', 'beta'],
+  'New feature accessed',
+  { featureId: 'x-123', usage: 'first-time' }
+);
+
+// Tags for error tracking
+devConsole.value.errorWithTags(
+  ['database', 'query', 'error'],
+  'Database query failed',
+  { query: 'SELECT...', error: 'Timeout' }
+);
+
+// Tags for performance monitoring
+devConsole.value.warnWithTags(
+  ['performance', 'api', 'latency'],
+  'API response time exceeded threshold',
+  { endpoint: '/api/users', duration: '2500ms', threshold: '2000ms' }
+);
 ```
+
+Each logging method supports:
+- An array of tags as the first argument
+- A message string as the second argument
+- Additional data as subsequent arguments (objects, errors, etc.)
+
+In the Dev Console UI, you can:
+- Click on tags to filter logs
+- Combine multiple tags to see logs matching all selected tags
+- Use the search bar along with tags for advanced filtering
+- Clear tag filters by clicking the clear button
+
+Common tag categories:
+- Feature areas: 'auth', 'api', 'database', 'ui'
+- Log types: 'error', 'warning', 'debug'
+- Environment: 'dev', 'staging', 'prod'
+- Components: 'frontend', 'backend', 'middleware'
+- Status: 'success', 'failure', 'pending'
+
+Best practices:
+1. Use consistent tag naming across your application
+2. Combine broad and specific tags for better filtering
+3. Include relevant data objects with your tagged logs
+4. Use tags to track feature usage and errors
+5. Group related operations with similar tags
 
 ### Log Groups
 

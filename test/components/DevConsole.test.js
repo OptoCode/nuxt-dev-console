@@ -89,6 +89,7 @@ vi.mock("../../src/runtime/components/DevConsole.vue", () => ({
       return {
         isVisible: false,
         selectedTypes: ["log", "error", "warn", "info"],
+        selectedTags: [],
         searchQuery: "",
         logs: [],
         localTheme: "dark",
@@ -118,6 +119,13 @@ vi.mock("../../src/runtime/components/DevConsole.vue", () => ({
         // Filter by log type
         if (this.selectedTypes && this.selectedTypes.length > 0) {
           filtered = filtered.filter(log => this.selectedTypes.includes(log.type));
+        }
+        
+        // Filter by tags
+        if (this.selectedTags && this.selectedTags.length > 0) {
+          filtered = filtered.filter(log => 
+            this.selectedTags.every(tag => log.tags && log.tags.includes(tag))
+          );
         }
         
         // Filter by search query
@@ -152,13 +160,42 @@ vi.mock("../../src/runtime/components/DevConsole.vue", () => ({
       restoreConsole() {
         // Mock implementation
       },
-      createLog(type, args) {
-        this.logs.push({
+      createLog(type, args, tags = []) {
+        // Respect maxLogHistory limit
+        if (this.logs.length >= this.mergedProps.maxLogHistory) {
+          this.logs.shift();
+        }
+        
+        const log = {
           type,
           content: args,
           timestamp: Date.now(),
-        });
+          tags
+        };
+        
+        this.logs.push(log);
+        
+        // Persist to localStorage
+        try {
+          const storedLogs = JSON.parse(localStorage.getItem('devConsoleLogs') || '[]');
+          storedLogs.push(log);
+          localStorage.setItem('devConsoleLogs', JSON.stringify(storedLogs));
+        } catch (e) {
+          console.error('Failed to persist logs to localStorage:', e);
+        }
       },
+      logWithTags(tags, ...args) {
+        this.createLog('log', args, tags);
+      },
+      errorWithTags(tags, ...args) {
+        this.createLog('error', args, tags);
+      },
+      warnWithTags(tags, ...args) {
+        this.createLog('warn', args, tags);
+      },
+      infoWithTags(tags, ...args) {
+        this.createLog('info', args, tags);
+      }
     },
     mounted() {
       this.interceptConsole();
@@ -313,5 +350,162 @@ describe("DevConsole", () => {
     expect(wrapper.vm.mergedProps.width).toBe(1000);
     // Default values should be used for props not specified
     expect(wrapper.vm.mergedProps.maxLogHistory).toBe(100);
+  });
+});
+
+describe('DevConsole Component', () => {
+  let wrapper;
+  let consoleSpy;
+
+  beforeEach(() => {
+    // Setup console spies
+    consoleSpy = {
+      log: vi.spyOn(console, 'log').mockImplementation(() => {}),
+      error: vi.spyOn(console, 'error').mockImplementation(() => {}),
+      warn: vi.spyOn(console, 'warn').mockImplementation(() => {}),
+      info: vi.spyOn(console, 'info').mockImplementation(() => {})
+    };
+
+    // Mock localStorage
+    const localStorageMock = {
+      getItem: vi.fn(),
+      setItem: vi.fn(),
+      clear: vi.fn()
+    };
+    global.localStorage = localStorageMock;
+
+    // Mount component
+    wrapper = mount(DevConsole, {
+      props: {
+        position: 'bottom-right',
+        theme: 'dark',
+        height: 600,
+        width: 800,
+        maxLogHistory: 100
+      }
+    });
+  });
+
+  afterEach(() => {
+    wrapper.unmount();
+    vi.restoreAllMocks();
+  });
+
+  describe('Tag-based Logging', () => {
+    it('should create log with tags', async () => {
+      const tags = ['test', 'auth'];
+      const message = 'Test message';
+      const data = { userId: 123 };
+
+      await wrapper.vm.logWithTags(tags, message, data);
+
+      const logs = wrapper.vm.logs;
+      expect(logs).toHaveLength(1);
+      expect(logs[0]).toMatchObject({
+        type: 'log',
+        content: [message, data],
+        tags: tags,
+        timestamp: expect.any(Number)
+      });
+    });
+
+    it('should create error with tags', async () => {
+      const tags = ['error', 'api'];
+      const error = new Error('API Error');
+
+      await wrapper.vm.errorWithTags(tags, 'API Failed', error);
+
+      const logs = wrapper.vm.logs;
+      expect(logs).toHaveLength(1);
+      expect(logs[0]).toMatchObject({
+        type: 'error',
+        content: ['API Failed', error],
+        tags: tags,
+        timestamp: expect.any(Number)
+      });
+    });
+
+    it('should create warning with tags', async () => {
+      const tags = ['warning', 'performance'];
+      const data = { latency: '500ms' };
+
+      await wrapper.vm.warnWithTags(tags, 'High latency detected', data);
+
+      const logs = wrapper.vm.logs;
+      expect(logs).toHaveLength(1);
+      expect(logs[0]).toMatchObject({
+        type: 'warn',
+        content: ['High latency detected', data],
+        tags: tags,
+        timestamp: expect.any(Number)
+      });
+    });
+
+    it('should create info with tags', async () => {
+      const tags = ['info', 'config'];
+      const data = { theme: 'dark' };
+
+      await wrapper.vm.infoWithTags(tags, 'Config updated', data);
+
+      const logs = wrapper.vm.logs;
+      expect(logs).toHaveLength(1);
+      expect(logs[0]).toMatchObject({
+        type: 'info',
+        content: ['Config updated', data],
+        tags: tags,
+        timestamp: expect.any(Number)
+      });
+    });
+
+    it('should filter logs by tags', async () => {
+      // Create logs with different tags
+      await wrapper.vm.logWithTags(['auth', 'user'], 'User login');
+      await wrapper.vm.logWithTags(['api'], 'API call');
+      await wrapper.vm.logWithTags(['auth', 'api'], 'Auth API call');
+
+      // Set selected tags
+      await wrapper.setData({ selectedTags: ['auth'] });
+
+      // Get filtered logs
+      const filteredLogs = wrapper.vm.filteredLogs;
+      expect(filteredLogs).toHaveLength(2);
+      expect(filteredLogs.every(log => log.tags.includes('auth'))).toBe(true);
+    });
+
+    it('should handle multiple tags filtering', async () => {
+      // Create logs with different tags
+      await wrapper.vm.logWithTags(['auth', 'user'], 'User login');
+      await wrapper.vm.logWithTags(['api', 'error'], 'API error');
+      await wrapper.vm.logWithTags(['auth', 'api'], 'Auth API call');
+
+      // Set multiple selected tags
+      await wrapper.setData({ selectedTags: ['auth', 'api'] });
+
+      // Get filtered logs
+      const filteredLogs = wrapper.vm.filteredLogs;
+      expect(filteredLogs).toHaveLength(1);
+      expect(filteredLogs[0].content[0]).toBe('Auth API call');
+    });
+
+    it('should persist tags in localStorage', async () => {
+      const tags = ['test', 'persistence'];
+      await wrapper.vm.logWithTags(tags, 'Test message');
+
+      expect(localStorage.setItem).toHaveBeenCalled();
+      expect(localStorage.setItem.mock.calls[0][1]).toContain('"tags":["test","persistence"]');
+    });
+
+    it('should respect maxLogHistory when adding tagged logs', async () => {
+      const maxHistory = 2;
+      await wrapper.setProps({ maxLogHistory: maxHistory });
+
+      // Add more logs than maxHistory
+      await wrapper.vm.logWithTags(['test'], 'Log 1');
+      await wrapper.vm.logWithTags(['test'], 'Log 2');
+      await wrapper.vm.logWithTags(['test'], 'Log 3');
+
+      expect(wrapper.vm.logs).toHaveLength(maxHistory);
+      expect(wrapper.vm.logs[maxHistory - 1].content[0]).toBe('Log 3');
+    });
   });
 });

@@ -95,7 +95,6 @@ const mergedProps = computed(() => {
     "top-left",
   ];
   const validThemes = ["dark", "light", "system"];
-  const validLogLevels = ["info", "warn", "error"];
 
   // Ensure we have valid defaults
   const defaultProps = {
@@ -168,7 +167,7 @@ const mergedProps = computed(() => {
       ? filters.showLogLevel
       : defaultProps.filters.showLogLevel;
 
-  filters.minLevel = validLogLevels.includes(filters.minLevel)
+  filters.minLevel = ["info", "warn", "error"].includes(filters.minLevel)
     ? filters.minLevel
     : defaultProps.filters.minLevel;
 
@@ -351,6 +350,13 @@ const errorWithTags = (tags, ...args) => createLog("error", args, tags);
 const warnWithTags = (tags, ...args) => createLog("warn", args, tags);
 const infoWithTags = (tags, ...args) => createLog("info", args, tags);
 
+defineExpose({
+  logWithTags,
+  errorWithTags,
+  warnWithTags,
+  infoWithTags
+});
+
 // Add computed for filtered logs
 const filteredLogs = computed(() => {
   return logs.value.filter(log => {
@@ -375,16 +381,6 @@ const filteredLogs = computed(() => {
     return true;
   });
 });
-
-// Add function to toggle tag selection
-const toggleTag = (tag) => {
-  const index = selectedTags.value.indexOf(tag);
-  if (index === -1) {
-    selectedTags.value.push(tag);
-  } else {
-    selectedTags.value.splice(index, 1);
-  }
-};
 
 // Add function to clear tag selection
 const clearTagSelection = () => {
@@ -425,13 +421,6 @@ const endLogGroup = () => {
     timestamp: Date.now(),
     isGroup: true
   });
-};
-
-const toggleLogGroup = (groupId) => {
-  const group = logs.value.find(log => log.groupId === groupId);
-  if (group) {
-    group.collapsed = !group.collapsed;
-  }
 };
 
 const saveLogsToFile = (format = 'txt') => {
@@ -754,36 +743,8 @@ const getLogPreview = (log) => {
   }).join(' ').slice(0, 60) + (log.content.join(' ').length > 60 ? '...' : '');
 };
 
-// Add export functionality
-const exportLogs = () => {
-  try {
-    const exportData = {
-      logs: logs.value,
-      timestamp: new Date().toISOString(),
-      config: mergedProps.value
-    };
-    
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `dev-console-logs-${new Date().toISOString()}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  } catch (e) {
-    console.error('[DevConsole] Failed to export logs:', e);
-  }
-};
-
 // Add cleanup on component unmount
 onUnmounted(() => {
-  // Clear any intervals or timeouts
-  if (searchTimeout) {
-    clearTimeout(searchTimeout);
-  }
-  
   // Save current state
   safeLocalStorage.set(STORAGE_KEYS.LOGS, logs.value);
   safeLocalStorage.set(STORAGE_KEYS.SEARCH_HISTORY, searchHistory.value);

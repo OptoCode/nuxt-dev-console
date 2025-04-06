@@ -1,4 +1,44 @@
 declare module "@opto-code/nuxt-dev-console" {
+  /**
+   * Common log tag categories
+   */
+  type LogTag = 
+    | 'auth' 
+    | 'api' 
+    | 'database' 
+    | 'ui' 
+    | 'error' 
+    | 'warning' 
+    | 'debug' 
+    | 'performance' 
+    | 'frontend'
+    | 'backend'
+    | 'middleware'
+    | 'success'
+    | 'failure'
+    | 'pending'
+    | 'config'
+    | 'system'
+    | string;
+
+  /**
+   * Log level types
+   */
+  type LogLevel = 'log' | 'error' | 'warn' | 'info';
+
+  /**
+   * Structure of a log entry
+   */
+  interface LogEntry {
+    type: LogLevel;
+    content: any[];
+    timestamp: number;
+    tags?: LogTag[];
+    groupId?: string;
+    isGroup?: boolean;
+    collapsed?: boolean;
+  }
+
   interface ModuleOptions {
     /**
      * Enable or disable the dev console
@@ -20,19 +60,19 @@ declare module "@opto-code/nuxt-dev-console" {
 
     /**
      * Initial height of the console window in pixels
-     * @default 300
+     * @default 600
      */
     height?: number;
 
     /**
      * Initial width of the console window in pixels
-     * @default 400
+     * @default 800
      */
     width?: number;
 
     /**
      * Maximum number of logs to keep in history
-     * @default 100
+     * @default 1000
      */
     maxLogHistory?: number;
 
@@ -50,6 +90,11 @@ declare module "@opto-code/nuxt-dev-console" {
        * @default 'ctrl+l'
        */
       clear?: string;
+      /**
+       * Shortcut to focus search
+       * @default 'ctrl+f'
+       */
+      search?: string;
     };
 
     /**
@@ -76,7 +121,23 @@ declare module "@opto-code/nuxt-dev-console" {
        * Minimum log level to display
        * @default 'info'
        */
-      minLevel?: "info" | "warn" | "error";
+      minLevel?: LogLevel;
+    };
+
+    /**
+     * Custom theme configuration
+     */
+    customTheme?: {
+      dark?: {
+        background?: string;
+        text?: string;
+        [key: string]: string | undefined;
+      };
+      light?: {
+        background?: string;
+        text?: string;
+        [key: string]: string | undefined;
+      };
     };
   }
 
@@ -84,41 +145,95 @@ declare module "@opto-code/nuxt-dev-console" {
     /**
      * Log a message to the dev console
      */
-    log: (message: any) => void;
+    log: (message: any, ...args: any[]) => void;
+
     /**
      * Log an error to the dev console
      */
-    error: (error: any) => void;
+    error: (message: any, ...args: any[]) => void;
+
     /**
      * Log a warning to the dev console
      */
-    warn: (message: any) => void;
+    warn: (message: any, ...args: any[]) => void;
+
+    /**
+     * Log an info message to the dev console
+     */
+    info: (message: any, ...args: any[]) => void;
+
+    /**
+     * Log a message with tags to the dev console
+     * @param tags Array of tags to categorize the log
+     * @param message Main message to log
+     * @param args Additional arguments to log
+     */
+    logWithTags: (tags: LogTag[], message: any, ...args: any[]) => void;
+
+    /**
+     * Log an error with tags to the dev console
+     * @param tags Array of tags to categorize the error
+     * @param message Error message or Error object
+     * @param args Additional arguments to log
+     */
+    errorWithTags: (tags: LogTag[], message: any, ...args: any[]) => void;
+
+    /**
+     * Log a warning with tags to the dev console
+     * @param tags Array of tags to categorize the warning
+     * @param message Warning message
+     * @param args Additional arguments to log
+     */
+    warnWithTags: (tags: LogTag[], message: any, ...args: any[]) => void;
+
+    /**
+     * Log an info message with tags to the dev console
+     * @param tags Array of tags to categorize the info
+     * @param message Info message
+     * @param args Additional arguments to log
+     */
+    infoWithTags: (tags: LogTag[], message: any, ...args: any[]) => void;
+
     /**
      * Clear the dev console
      */
     clear: () => void;
+
+    /**
+     * Start a new log group
+     */
+    group: (label: string) => void;
+
+    /**
+     * Start a new collapsed log group
+     */
+    groupCollapsed: (label: string) => void;
+
+    /**
+     * End the current log group
+     */
+    groupEnd: () => void;
+
+    /**
+     * Export logs in various formats
+     */
+    exportLogs: (format?: 'json' | 'csv' | 'txt') => void;
   }
 
   interface DevConsoleHooks {
     "devConsole:beforeInit": () => void | Promise<void>;
-    "devConsole:log": (log: {
-      type: string;
-      message: any;
-      timestamp: number;
-    }) => void | Promise<void>;
+    "devConsole:log": (log: LogEntry) => void | Promise<void>;
+    "devConsole:clear": () => void | Promise<void>;
+    "devConsole:export": (format: string) => void | Promise<void>;
   }
 }
 
 // Extend Nuxt's runtime config
 declare module "@nuxt/schema" {
   interface RuntimeConfig {
-    devConsole?: {
-      enabled: boolean;
-    };
+    devConsole?: ModuleOptions;
   }
   interface PublicRuntimeConfig {
-    devConsole?: {
-      enabled: boolean;
-    };
+    devConsole?: ModuleOptions;
   }
 }

@@ -29,7 +29,7 @@ pnpm add @opto-code/nuxt-dev-console
 
 ## Setup
 
-Add `nuxt-dev-console` to your `nuxt.config.js`:
+Add `@opto-code/nuxt-dev-console` to your `nuxt.config.js`:
 
 ```js
 export default defineNuxtConfig({
@@ -80,71 +80,193 @@ export default defineNuxtConfig({
 
 ## Usage
 
-### Basic Logging
+There are two ways to use the dev console in your Nuxt application:
 
-The DevLogger is automatically injected into your Nuxt app and is available as `$devLogger`:
+### 1. Using the DevConsole Component
+
+The most flexible way is to use the DevConsole component directly:
+
+```vue
+<template>
+  <div>
+    <!-- Your app content -->
+    <DevConsole ref="devConsole" />
+  </div>
+</template>
+
+<script setup>
+import { ref } from 'vue'
+
+// Get a reference to the DevConsole
+const devConsole = ref(null)
+
+// Use tag-enabled logging methods
+const logExample = () => {
+  // Basic tagged logging
+  devConsole.value?.logWithTags(['user', 'auth'], 'User logged in', { userId: 123 })
+  
+  // Error logging with tags
+  devConsole.value?.errorWithTags(
+    ['api', 'error'], 
+    'API request failed',
+    new Error('Network error')
+  )
+  
+  // Warning with performance tags
+  devConsole.value?.warnWithTags(
+    ['performance', 'api'], 
+    'Slow API response',
+    { endpoint: '/users', duration: '500ms' }
+  )
+  
+  // Info with feature tags
+  devConsole.value?.infoWithTags(
+    ['feature', 'beta'], 
+    'New feature accessed',
+    { featureId: 'x-123' }
+  )
+}
+</script>
+```
+
+### 2. Using the Global DevLogger
+
+The module also provides a global `$devLogger` that's automatically injected:
 
 ```js
 // In your components/pages
 export default defineComponent({
   setup() {
-    const { $devLogger } = useNuxtApp();
+    const { $devLogger } = useNuxtApp()
 
     // Basic logging
-    $devLogger.log("Hello world");
-    $devLogger.info("User logged in", { userId: 123 });
-    $devLogger.warn("Deprecated feature used");
-    $devLogger.error("Operation failed", new Error("Details"));
-    $devLogger.debug("Debug information");
-
-    // Tagged logging
-    $devLogger.logWithTags(['auth', 'user'], 'User authenticated');
-    $devLogger.errorWithTags(['api'], 'API request failed');
+    $devLogger.log("Hello world")
+    $devLogger.info("User logged in", { userId: 123 })
+    $devLogger.warn("Deprecated feature used")
+    $devLogger.error("Operation failed", new Error("Details"))
+    $devLogger.debug("Debug information")
 
     // Log groups
-    $devLogger.group('API Requests');
-    $devLogger.log('GET /api/users');
-    $devLogger.log('POST /api/data');
-    $devLogger.groupEnd();
+    $devLogger.group('API Requests')
+    $devLogger.log('GET /api/users')
+    $devLogger.log('POST /api/data')
+    $devLogger.groupEnd()
   }
-});
+})
 ```
 
-### Log Organization
+### Advanced Features
+
+#### Tag-Based Logging
+
+Use tags to organize and filter your logs:
 
 ```js
-// In your components/pages
-const { $devLogger } = useNuxtApp();
+// Feature tracking
+devConsole.value?.logWithTags(
+  ['feature', 'beta', 'usage'],
+  'Feature accessed',
+  { featureId: 'x-123', user: 'john' }
+)
 
-// Create log groups
-$devLogger.group('User Authentication');
-$devLogger.info('Login attempt');
-$devLogger.log('Validation passed');
-$devLogger.groupEnd();
+// Error tracking
+devConsole.value?.errorWithTags(
+  ['database', 'query', 'error'],
+  'Query failed',
+  { query: 'SELECT...', error: 'Timeout' }
+)
 
-// Use tags for filtering
-$devLogger.logWithTags(['auth', 'success'], 'Login successful');
-$devLogger.errorWithTags(['api', 'error'], 'API timeout');
+// Performance monitoring
+devConsole.value?.warnWithTags(
+  ['performance', 'api', 'latency'],
+  'High latency detected',
+  { endpoint: '/api/users', duration: '2500ms' }
+)
+
+// Configuration changes
+devConsole.value?.infoWithTags(
+  ['config', 'system'],
+  'Config updated',
+  { changes: { theme: 'dark' } }
+)
 ```
 
-### Export and Storage
+Common tag categories:
+- Feature areas: 'auth', 'api', 'database', 'ui'
+- Log types: 'error', 'warning', 'debug'
+- Environment: 'dev', 'staging', 'prod'
+- Components: 'frontend', 'backend', 'middleware'
+- Status: 'success', 'failure', 'pending'
+
+#### Log Organization
 
 ```js
-// In your components/pages
-const { $devLogger } = useNuxtApp();
+// Group related logs
+devConsole.value?.group('User Authentication')
+devConsole.value?.logWithTags(['auth'], 'Login attempt')
+devConsole.value?.logWithTags(['auth', 'success'], 'Validation passed')
+devConsole.value?.groupEnd()
 
+// Track API calls
+devConsole.value?.group('API Requests')
+devConsole.value?.logWithTags(['api', 'request'], 'GET /api/users')
+devConsole.value?.logWithTags(['api', 'response'], 'Response received')
+devConsole.value?.groupEnd()
+```
+
+#### Export and Storage
+
+```js
 // Export logs programmatically
-$devLogger.exportLogs(); // JSON format
-$devLogger.exportLogs('csv'); // CSV format
-$devLogger.exportLogs('txt'); // Text format
-
-// Browser console control
-$devLogger.enableBrowserConsole();
-$devLogger.disableBrowserConsole();
+devConsole.value?.exportLogs() // JSON format
+devConsole.value?.exportLogs('csv') // CSV format
+devConsole.value?.exportLogs('txt') // Text format
 
 // Clear logs
-$devLogger.clear();
+devConsole.value?.clear()
 ```
+
+### Best Practices
+
+1. **Consistent Tag Usage**
+   ```js
+   // Good - consistent tag categories
+   devConsole.value?.logWithTags(['auth', 'user'], 'Login')
+   devConsole.value?.logWithTags(['auth', 'session'], 'Session created')
+   
+   // Avoid - inconsistent tag naming
+   devConsole.value?.logWithTags(['authentication'], 'Login')
+   devConsole.value?.logWithTags(['auth'], 'Session created')
+   ```
+
+2. **Meaningful Data Objects**
+   ```js
+   // Good - includes relevant data
+   devConsole.value?.logWithTags(['api'], 'Request completed', {
+     endpoint: '/users',
+     duration: '100ms',
+     status: 200
+   })
+   
+   // Avoid - missing context
+   devConsole.value?.logWithTags(['api'], 'Request completed')
+   ```
+
+3. **Hierarchical Tags**
+   ```js
+   // Good - hierarchical organization
+   devConsole.value?.logWithTags(['ui', 'button', 'click'], 'Button clicked')
+   devConsole.value?.logWithTags(['ui', 'form', 'submit'], 'Form submitted')
+   ```
+
+4. **Error Context**
+   ```js
+   // Good - includes error object and context
+   devConsole.value?.errorWithTags(['api', 'error'], 'API failed', {
+     error: new Error('Network timeout'),
+     request: { url, method, params }
+   })
+   ```
 
 ### Keyboard Shortcuts
 
