@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## v0.1.11
+
+[compare changes](https://github.com/OptoCode/nuxt-dev-console/compare/v0.1.10...v0.1.11)
+
+### 🚀 Enhancements
+
+- Update ChangeLog and package.json ([190ff29](https://github.com/OptoCode/nuxt-dev-console/commit/190ff29))
+- Remove compasable and added a plugin ([700d42b](https://github.com/OptoCode/nuxt-dev-console/commit/700d42b))
+- **DevConsole:** Enhance functionality with log filtering, storage, and UI improvements ([090dfc7](https://github.com/OptoCode/nuxt-dev-console/commit/090dfc7))
+- **DevConsole:** Introduce advanced logging features and UI enhancements ([25fd23d](https://github.com/OptoCode/nuxt-dev-console/commit/25fd23d))
+- **DevConsole:** Add tagged logging and improve documentation ([bc03cfe](https://github.com/OptoCode/nuxt-dev-console/commit/bc03cfe))
+
+### ✅ Tests
+
+- **components:** Enhance DevConsole component tests with theme and filtering ([e7fe7a1](https://github.com/OptoCode/nuxt-dev-console/commit/e7fe7a1))
+
+### ❤️ Contributors
+
+- OptoCode ([@OptoCode](https://github.com/OptoCode))
+
 ## v0.1.10
 
 ### 🩹 Fixes
