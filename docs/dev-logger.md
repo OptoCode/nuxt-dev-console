@@ -1,102 +1,231 @@
-# Development Logger
+# Nuxt Development Logger
 
-The Nuxt Dev Console module provides a development-only logger that allows you to log messages only when your Nuxt application is running in development mode. This is useful for debugging and development without cluttering the console in production.
+The Development Logger is a powerful debugging and logging utility designed specifically for Nuxt applications. It provides enhanced logging capabilities in development mode while ensuring zero overhead in production.
 
-## Features
+## 🎯 Key Features
 
-- Only logs in development mode (or when `allowProduction` is set to `true`)
-- Prefixes all logs with `[DevLogger]` for easy identification
-- Supports all standard console methods (log, info, warn, error, etc.)
-- Queue system for handling rapid logging with automatic overflow protection
-- Available as a Nuxt plugin with TypeScript support
-- Also available as a global `$devLogger` object in the browser
+### Core Functionality
+- Development-mode focused logging with zero production overhead
+- Intelligent queue system for handling high-volume logging
+- Automatic overflow protection and memory management
+- TypeScript support out of the box
+- Global browser console access via `window.$devLogger`
 
-## Usage
+### Logging Capabilities
+- Support for all standard console methods
+- Log grouping and organization
+- Performance timing utilities
+- Table and object inspection tools
+- Stack trace support
+- Assertion handling
 
-### Basic Usage
+### Performance & Safety
+- Queue-based logging system with configurable limits
+- Automatic overflow protection
+- Configurable flush intervals
+- Safe production mode with no-op functions
+- Memory-efficient log processing
 
-```vue
-<script setup>
-// Import the logger from the Nuxt app context
-const { $devLogger } = useNuxtApp();
+## Installation
 
-// Use it in your component
-function someFunction() {
-  $devLogger.log('This message only appears in development mode');
-  $devLogger.info('User logged in', { userId: 123 });
-  $devLogger.warn('Deprecated feature used');
-  $devLogger.error('Something went wrong', new Error('Error details'));
-}
-</script>
+The Development Logger is included as part of the Nuxt Dev Console module:
+
+```bash
+# npm
+npm install @opto-code/nuxt-dev-console
+
+# yarn
+yarn add @opto-code/nuxt-dev-console
+
+# pnpm
+pnpm add @opto-code/nuxt-dev-console
 ```
 
-### Log Groups and Organization
+## Basic Configuration
 
-```js
-// Create a log group
-$devLogger.group('User Authentication');
-$devLogger.info('Attempting login...');
-$devLogger.log('Credentials validated');
-$devLogger.groupEnd();
-
-// Create a collapsed group
-$devLogger.groupCollapsed('API Requests');
-$devLogger.log('GET /api/users');
-$devLogger.log('POST /api/data');
-$devLogger.groupEnd();
-```
-
-### Available Methods
-
-The development logger supports all standard console methods:
-
-- `$devLogger.log(...args)` - Standard log message
-- `$devLogger.info(...args)` - Informational message
-- `$devLogger.warn(...args)` - Warning message
-- `$devLogger.error(...args)` - Error message
-- `$devLogger.debug(...args)` - Debug message
-- `$devLogger.group(label)` - Start a collapsible group in the console
-- `$devLogger.groupEnd()` - End the current group
-- `$devLogger.time(label)` - Start a timer with the given label
-- `$devLogger.timeEnd(label)` - End the timer with the given label and log the elapsed time
-- `$devLogger.trace(...args)` - Output a stack trace
-- `$devLogger.assert(condition, ...args)` - Log a message if the condition is false
-- `$devLogger.table(data, columns)` - Display tabular data as a table
-- `$devLogger.dir(obj, options)` - Display an interactive list of the properties of the specified object
-- `$devLogger.dirxml(obj)` - Display an XML/HTML Element representation of the specified object
-
-### Global Access
-
-In development mode, the logger is also available as a global `window.$devLogger` object, which can be useful for debugging in the browser console:
-
-```js
-// In the browser console (development mode only)
-window.$devLogger.log('Testing from console');
-window.$devLogger.table([{ name: 'John', age: 30 }, { name: 'Jane', age: 28 }]);
-```
-
-## Configuration
-
-The development logger is automatically enabled in development mode. In production, all logger methods become no-op functions (they do nothing) unless you explicitly enable production logging.
-
-To configure the logger, use the `devConsole` options in your `nuxt.config.js`:
-
-```js
-// nuxt.config.js
+```ts
+// nuxt.config.ts
 export default defineNuxtConfig({
+  modules: ['@opto-code/nuxt-dev-console'],
   devConsole: {
     enabled: true,
-    allowProduction: false, // Enable in production mode
-    maxLogHistory: 1000, // Maximum number of logs to keep in memory
+    allowProduction: false,
+    maxLogHistory: 1000,
+    queueSize: 1000,
+    flushInterval: 100 // milliseconds
+  }
+})
+```
+
+## Usage Guide
+
+### Basic Logging
+
+```ts
+// In your Vue components or Nuxt pages
+const { $devLogger } = useNuxtApp()
+
+// Basic logging
+$devLogger.log('Hello World')
+$devLogger.info('Server started', { port: 3000 })
+$devLogger.warn('Deprecated feature used', { feature: 'oldAPI' })
+$devLogger.error('Connection failed', new Error('Timeout'))
+```
+
+### Advanced Logging Features
+
+#### Log Groups
+```ts
+// Expanded groups
+$devLogger.group('Authentication Flow')
+$devLogger.info('User attempting login...')
+$devLogger.log('Validating credentials...')
+$devLogger.info('Login successful')
+$devLogger.groupEnd()
+
+// Collapsed groups (hidden by default)
+$devLogger.groupCollapsed('API Requests')
+$devLogger.log('GET /api/users')
+$devLogger.log('POST /api/data')
+$devLogger.groupEnd()
+```
+
+#### Performance Monitoring
+```ts
+// Time operations
+$devLogger.time('dataFetch')
+await fetchData()
+$devLogger.timeEnd('dataFetch') // Outputs: [DevLogger] dataFetch: 1234ms
+
+// Multiple timers
+$devLogger.time('operation1')
+$devLogger.time('operation2')
+// ... operations ...
+$devLogger.timeEnd('operation2')
+$devLogger.timeEnd('operation1')
+```
+
+#### Data Inspection
+```ts
+// Table format for array data
+$devLogger.table([
+  { id: 1, name: 'John', role: 'admin' },
+  { id: 2, name: 'Jane', role: 'user' }
+])
+
+// Object inspection
+$devLogger.dir(complexObject, { depth: 2, colors: true })
+
+// DOM element inspection
+$devLogger.dirxml(document.body)
+```
+
+#### Debugging
+```ts
+// Stack traces
+$devLogger.trace('Trace message')
+
+// Conditional logging
+$devLogger.assert(value > 0, 'Value must be positive', { value })
+```
+
+### Browser Console Access
+
+During development, the logger is globally available in the browser:
+
+```ts
+// Browser console
+window.$devLogger.log('Testing from console')
+window.$devLogger.table(data)
+window.$devLogger.time('operation')
+```
+
+## Advanced Configuration
+
+### Queue System Configuration
+
+```ts
+export default defineNuxtConfig({
+  devConsole: {
+    logger: {
+      queueSize: 2000,        // Maximum queue size (default: 1000)
+      flushInterval: 200,     // Queue processing interval in ms (default: 100)
+      dropOldest: true,       // Drop oldest logs when queue is full (default: true)
+      groupTimeout: 5000      // Auto-close groups after timeout (default: 5000ms)
+    }
+  }
+})
+```
+
+### Production Mode
+
+By default, all logging is disabled in production. To enable it:
+
+```ts
+export default defineNuxtConfig({
+  devConsole: {
+    allowProduction: true,    // Enable logging in production
+    productionLevel: 'warn'   // Only show warnings and errors in production
   }
 })
 ```
 
 ## Best Practices
 
-1. Use the development logger for debugging and development information that shouldn't appear in production.
-2. Use appropriate log levels (info, warn, error) based on the importance of the message.
-3. For critical errors that should always be logged, use the standard `console.error()` instead.
-4. Use groups to organize related logs and make the console output more readable.
-5. Use `time()` and `timeEnd()` to measure performance of operations during development.
-6. Take advantage of the queue system's automatic handling for rapid logging scenarios.
+### Performance Optimization
+1. Use appropriate log levels for different types of information
+2. Utilize collapsed groups for verbose logging
+3. Consider queue size and flush interval for high-volume logging
+4. Clean up timers and groups when done
+
+### Development Workflow
+1. Use table() for debugging array/object data
+2. Leverage time() for performance bottleneck identification
+3. Group related logs for better organization
+4. Use assert() for development-time validation
+
+### Production Safety
+1. Avoid sensitive information in logs
+2. Use standard console.error() for critical production errors
+3. Consider log levels when enabling production logging
+4. Clean up all development-only logging code
+
+## TypeScript Support
+
+The Development Logger includes full TypeScript definitions:
+
+```ts
+interface DevLogger {
+  log(...args: any[]): void
+  info(...args: any[]): void
+  warn(...args: any[]): void
+  error(...args: any[]): void
+  debug(...args: any[]): void
+  group(label: string): void
+  groupEnd(): void
+  time(label: string): void
+  timeEnd(label: string): void
+  trace(...args: any[]): void
+  assert(condition: boolean, ...args: any[]): void
+  table(tabularData?: any, properties?: string[]): void
+  dir(item?: any, options?: any): void
+  dirxml(value: any): void
+}
+```
+
+## Error Handling
+
+The logger implements robust error handling:
+
+- Queue overflow protection
+- Safe error handling for failed log attempts
+- Automatic cleanup on component unmount
+- Graceful degradation in unsupported environments
+
+## Contributing
+
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+
+## License
+
+[MIT License](LICENSE)

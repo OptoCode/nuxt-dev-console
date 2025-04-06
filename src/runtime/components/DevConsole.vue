@@ -1108,8 +1108,47 @@ onUnmounted(() => {
 
 .log-container {
   border-radius: 4px;
-  padding: 8px;
   height: 100%;
+  overflow: hidden;
+  padding: 0 !important;
+}
+
+.v-card-text {
+  padding: 4px !important;
+}
+
+.v-container {
+  padding: 8px !important;
+  max-height: 100%;
+}
+
+.v-row {
+  margin: 0 !important;
+}
+
+.v-col {
+  padding: 4px !important;
+}
+
+.v-expansion-panels {
+  margin-bottom: 4px !important;
+  box-shadow: none;
+  width: 100%;
+  background: transparent;
+}
+
+.v-expansion-panel {
+  margin-bottom: 4px !important;
+  width: 100%;
+}
+
+.v-expansion-panel-title {
+  min-height: 40px !important;
+  padding: 8px !important;
+}
+
+.v-expansion-panel-text__wrapper {
+  padding: 8px !important;
 }
 
 .log-entry {
@@ -1134,6 +1173,15 @@ onUnmounted(() => {
 .log-info {
   border-left-color: blue !important;
   background-color: rgba(0, 0, 255, 0.05);
+}
+
+.log-group {
+  border-left: 3px solid #666 !important;
+  background-color: rgba(128, 128, 128, 0.05);
+}
+
+.ml-4 {
+  margin-left: 1rem;
 }
 
 pre {
@@ -1162,54 +1210,6 @@ pre {
   border-radius: 4px;
 }
 
-.log-group {
-  border-left: 3px solid #666 !important;
-  background-color: rgba(128, 128, 128, 0.05);
-}
-
-.ml-4 {
-  margin-left: 1rem;
-}
-
-.log-preview {
-  font-family: monospace;
-  font-size: 0.875rem;
-  line-height: 1.2;
-  max-width: 50vw;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.v-row {
-  margin: 0;
-}
-
-.v-col {
-  padding: 0;
-}
-
-.v-expansion-panels {
-  margin-bottom: 4px !important;
-  box-shadow: none;
-  width: 100%;
-}
-
-.v-expansion-panel {
-  margin-bottom: 4px !important;
-  width: 100%;
-}
-
-.v-expansion-panel-title {
-  min-height: 40px !important;
-  width: 100% !important;
-}
-
-.v-expansion-panel-title__content {
-  width: 100% !important;
-  overflow: hidden !important;
-}
-
 .log-preview {
   font-family: monospace;
   font-size: 0.875rem;
@@ -1232,10 +1232,6 @@ pre {
   overflow: hidden !important;
 }
 
-.v-expansion-panel-text__wrapper {
-  padding: 8px 0 !important;
-}
-
 .flex-nowrap {
   flex-wrap: nowrap !important;
 }
@@ -1247,6 +1243,28 @@ pre {
 .log-preview-container {
   max-width: 60%;
   overflow: hidden;
+}
+
+/* Fix for v-main spacing */
+.v-main {
+  padding: 0 !important;
+}
+
+/* Fix for toolbar spacing */
+.v-toolbar {
+  border-bottom: 1px solid rgba(128, 128, 128, 0.1);
+}
+
+/* Ensure chip groups don't create unwanted space */
+.v-chip-group {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Ensure search field doesn't create extra space */
+.v-text-field {
+  margin: 0 !important;
+  padding: 0 !important;
 }
 </style>
 

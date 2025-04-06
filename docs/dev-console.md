@@ -1,29 +1,72 @@
-# Dev Console Component
+# Nuxt Dev Console
 
-The Nuxt Dev Console module provides a powerful development console component that helps you debug and monitor your Nuxt application in real-time.
+The Nuxt Dev Console is a powerful development and debugging tool that provides real-time monitoring, logging, and debugging capabilities for your Nuxt applications. It offers a modern, feature-rich interface with advanced filtering, search, and organization capabilities.
 
-## Features
+## Key Features
 
-- Interactive console interface with customizable position and size
-- Local storage persistence for logs with quota management
-- Tag support for better log organization and filtering
-- Export functionality in multiple formats (JSON, CSV, TXT)
+### 🎯 Core Features
+- Interactive console interface with customizable positioning and dimensions
+- Real-time log monitoring and filtering
+- Advanced search capabilities with search history
+- Log persistence with intelligent storage management
+- Support for log groups and collapsible entries
+- Multiple export formats (JSON, CSV, TXT)
 - Customizable themes (dark, light, system)
-- Keyboard shortcuts for common operations
-- Real-time log filtering and search
-- Collapsible log groups
+- Keyboard shortcuts for quick access
+- Tag-based log organization and filtering
 
-## Configuration
+### 🔍 Log Management
+- Automatic log persistence between page reloads
+- Intelligent quota management for localStorage
+- Configurable maximum log history
+- Log grouping and nesting support
+- Copy-to-clipboard functionality for log entries
+- Virtual scrolling for optimal performance
+w 
+### 🎨 Visual Features
+- Three theme modes (dark, light, system)
+- Customizable position (top-right, top-left, bottom-right, bottom-left)
+- Resizable console window
+- Color-coded log levels
+- Collapsible log entries
+- Tag visualization and filtering
 
-Configure the Dev Console component in your `nuxt.config.js`:
+## Installation
 
-```js
-// nuxt.config.js
+```bash
+# npm
+npm install @opto-code/nuxt-dev-console
+
+# yarn
+yarn add @opto-code/nuxt-dev-console
+
+# pnpm
+pnpm add @opto-code/nuxt-dev-console
+```
+
+## Basic Configuration
+
+Add the module to your `nuxt.config.ts`:
+
+```ts
+export default defineNuxtConfig({
+  modules: ['@opto-code/nuxt-dev-console'],
+  devConsole: {
+    enabled: true
+  }
+})
+```
+
+## Advanced Configuration
+
+### Full Configuration Options
+
+```ts
 export default defineNuxtConfig({
   devConsole: {
     // Visual Configuration
-    position: 'bottom-right', // 'bottom-right', 'bottom-left', 'top-right', 'top-left'
-    theme: 'dark', // 'dark', 'light', 'system'
+    position: 'bottom-right', // 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left'
+    theme: 'dark', // 'dark' | 'light' | 'system'
     height: 600, // Height in pixels
     width: 800, // Width in pixels
     
@@ -41,185 +84,137 @@ export default defineNuxtConfig({
     filters: {
       showTimestamp: true,
       showLogLevel: true,
-      minLevel: 'info' // 'debug', 'info', 'warn', 'error'
+      minLevel: 'info' // 'debug' | 'info' | 'warn' | 'error'
     }
   }
 })
 ```
 
-## Log Storage and Persistence
+## Usage
 
-The Dev Console automatically manages log persistence:
+### Basic Logging
 
-- Logs are automatically saved to localStorage
-- Intelligent quota management:
-  - Automatic pruning of old logs when quota is exceeded
-  - Configurable maximum log history
-- Session persistence:
-  - Logs are restored between page reloads
-  - Search history is preserved
-  - Filter settings are maintained
-
-## Log Organization
-
-### Tags and Filtering
-
-Use tags to organize and filter your logs. First, get a reference to the DevConsole component:
-
-```vue
-<template>
-  <DevConsole ref="devConsole" />
-</template>
-
-<script setup>
-import { ref } from 'vue'
-const devConsole = ref(null)
-</script>
+```ts
+// Standard console methods are automatically captured
+console.log('Hello World');
+console.info('Information message');
+console.warn('Warning message');
+console.error('Error message');
 ```
 
-Then use the tag-enabled logging methods:
+### Tagged Logging
 
-```js
-// Basic tagged logging
+```ts
+// Get reference to the DevConsole component
+const devConsole = ref(null);
+
+// Log with tags for better organization
 devConsole.value.logWithTags(['user', 'auth'], 'User logged in', { userId: 123 });
 devConsole.value.errorWithTags(['api', 'error'], 'API request failed', new Error('Network error'));
 devConsole.value.warnWithTags(['performance'], 'Slow operation detected', { latency: '500ms' });
 devConsole.value.infoWithTags(['config'], 'Config loaded', { environment: 'production' });
-
-// Multiple tags for better categorization
-devConsole.value.logWithTags(
-  ['auth', 'security', 'user'],
-  'Two-factor authentication enabled',
-  { method: 'SMS', userId: 123 }
-);
-
-// Tags for feature tracking
-devConsole.value.logWithTags(
-  ['feature-x', 'beta'],
-  'New feature accessed',
-  { featureId: 'x-123', usage: 'first-time' }
-);
-
-// Tags for error tracking
-devConsole.value.errorWithTags(
-  ['database', 'query', 'error'],
-  'Database query failed',
-  { query: 'SELECT...', error: 'Timeout' }
-);
-
-// Tags for performance monitoring
-devConsole.value.warnWithTags(
-  ['performance', 'api', 'latency'],
-  'API response time exceeded threshold',
-  { endpoint: '/api/users', duration: '2500ms', threshold: '2000ms' }
-);
 ```
-
-Each logging method supports:
-- An array of tags as the first argument
-- A message string as the second argument
-- Additional data as subsequent arguments (objects, errors, etc.)
-
-In the Dev Console UI, you can:
-- Click on tags to filter logs
-- Combine multiple tags to see logs matching all selected tags
-- Use the search bar along with tags for advanced filtering
-- Clear tag filters by clicking the clear button
-
-Common tag categories:
-- Feature areas: 'auth', 'api', 'database', 'ui'
-- Log types: 'error', 'warning', 'debug'
-- Environment: 'dev', 'staging', 'prod'
-- Components: 'frontend', 'backend', 'middleware'
-- Status: 'success', 'failure', 'pending'
-
-Best practices:
-1. Use consistent tag naming across your application
-2. Combine broad and specific tags for better filtering
-3. Include relevant data objects with your tagged logs
-4. Use tags to track feature usage and errors
-5. Group related operations with similar tags
 
 ### Log Groups
 
-Organize related logs into collapsible groups:
+```ts
+// Create collapsible log groups
+console.group('API Requests');
+console.log('GET /api/users');
+console.log('POST /api/data');
+console.groupEnd();
 
-```js
-$devLogger.group('API Requests');
-$devLogger.log('GET /api/users');
-$devLogger.log('POST /api/data');
-$devLogger.groupEnd();
+// Or use collapsed groups
+console.groupCollapsed('Performance Metrics');
+console.log('Load time: 1.2s');
+console.log('First paint: 0.8s');
+console.groupEnd();
 ```
 
-## Export Functionality
+### Exporting Logs
 
-Export your logs in multiple formats:
-
-```js
+```ts
 // Programmatic export
 window.$devLogger.exportLogs(); // JSON format
 window.$devLogger.exportLogs('csv'); // CSV format
 window.$devLogger.exportLogs('txt'); // Text format
-
-// UI Export
-// - Click the export button in the console
-// - Select your desired format
-// - Choose export options (time range, log levels, tags)
 ```
 
 ## Keyboard Shortcuts
 
-Default keyboard shortcuts (customizable):
+Default keyboard shortcuts (customizable in config):
 
-- `ctrl+shift+d`: Toggle console visibility
-- `ctrl+l`: Clear console
-- `ctrl+f`: Focus search bar
-- `esc`: Close console
-
-Configure shortcuts in your `nuxt.config.js`:
-
-```js
-shortcuts: {
-  toggle: 'ctrl+shift+d',
-  clear: 'ctrl+l',
-  search: 'ctrl+f'
-}
-```
+| Shortcut | Action |
+|----------|---------|
+| `ctrl+shift+d` | Toggle console visibility |
+| `ctrl+l` | Clear console |
+| `ctrl+f` | Focus search bar |
+| `esc` | Close console |
 
 ## Best Practices
 
-1. Position the console where it won't interfere with your UI testing
-2. Use tags consistently across your application for better organization
-3. Export logs when debugging complex issues
-4. Use keyboard shortcuts for faster workflow
+### Log Organization
+1. Use consistent tag naming across your application
+2. Combine broad and specific tags for better filtering
+3. Include relevant data objects with your logs
+4. Use log groups for related operations
+5. Add timestamps for time-sensitive operations
+
+### Performance
+1. Configure appropriate `maxLogHistory` for your needs
+2. Regularly clear old logs to maintain performance
+3. Use tag filtering to focus on relevant information
+4. Export logs for long-term storage or analysis
+
+### Development Workflow
+1. Position the console where it won't interfere with UI testing
+2. Use keyboard shortcuts for faster navigation
+3. Utilize search history for common queries
+4. Export logs when debugging complex issues
 5. Configure appropriate log levels for different environments
-6. Use log groups for related operations
-7. Regularly clear old logs to maintain performance
 
-## Theming
+## Error Handling
 
-The Dev Console supports three theme modes:
+The Dev Console automatically captures and displays:
+- Nuxt application errors
+- Vue component errors
+- JavaScript runtime errors
+- Network request errors
+- Console warnings and errors
 
-- `dark`: Dark theme for low-light environments
-- `light`: Light theme for high-contrast
-- `system`: Automatically matches system preferences
+## Theme Customization
 
-Custom theme configuration:
-
-```js
+```ts
 devConsole: {
   theme: 'dark',
   customTheme: {
     dark: {
       background: '#1a1a1a',
       text: '#ffffff',
-      // ... other color variables
+      // Add custom color variables
     },
     light: {
       background: '#ffffff',
       text: '#000000',
-      // ... other color variables
+      // Add custom color variables
     }
   }
 }
-``` 
+```
+
+## Storage and Persistence
+
+The Dev Console implements intelligent storage management:
+- Automatic persistence of logs to localStorage
+- Smart quota management to prevent storage overflow
+- Configurable maximum log history
+- Automatic pruning of old logs when quota is exceeded
+- Preservation of search history and filter settings
+
+## Contributing
+
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+
+## License
+
+[MIT License](LICENSE) 

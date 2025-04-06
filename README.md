@@ -1,375 +1,260 @@
-# nuxt-dev-console
+# @opto-code/nuxt-dev-console
 
-A powerful development console for Nuxt 3 applications with advanced logging, filtering, and debugging capabilities.
+[![npm version][npm-version-src]][npm-version-href]
+[![npm downloads][npm-downloads-src]][npm-downloads-href]
+[![License][license-src]][license-href]
 
-## Features
+A powerful development console for Nuxt 3 applications that provides real-time monitoring, advanced logging, filtering, and debugging capabilities with zero production overhead.
 
-- 🎨 Customizable theme (dark/light/system) with custom theme support
-- 📍 Flexible positioning and resizable interface
-- ⌨️ Configurable keyboard shortcuts
-- 🔍 Advanced filtering and search capabilities
-- 🏷️ Tag-based log organization
-- 📋 Copy and export functionality (JSON, CSV, TXT)
-- 💾 Persistent storage with quota management
-- ⚡ Performance optimized with log queuing
-- 🎯 Production mode support (optional)
-- 🔄 Real-time log updates
-- 📊 Log grouping and collapsible sections
-- 🔒 Type-safe logging with TypeScript support
+[View Demo](https://demo-link) · [Report Bug](https://github.com/OptoCode/nuxt-dev-console/issues) · [Request Feature](https://github.com/OptoCode/nuxt-dev-console/issues)
 
-## Installation
+## ✨ Features
+
+### 🎯 Core Features
+- Interactive console interface with customizable positioning and dimensions
+- Real-time log monitoring and filtering
+- Advanced search capabilities with search history
+- Log persistence with intelligent storage management
+- Support for log groups and collapsible entries
+- Multiple export formats (JSON, CSV, TXT)
+
+### 🔍 Log Management
+- Automatic log persistence between page reloads
+- Intelligent quota management for localStorage
+- Configurable maximum log history
+- Log grouping and nesting support
+- Copy-to-clipboard functionality
+- Virtual scrolling for optimal performance
+
+### 🎨 Visual Features
+- Three theme modes (dark/light/system) with custom theme support
+- Customizable position (top-right, top-left, bottom-right, bottom-left)
+- Resizable console window
+- Color-coded log levels
+- Tag visualization and filtering
+- Collapsible log entries
+
+## 📦 Installation
 
 ```bash
+# npm
 npm install @opto-code/nuxt-dev-console
-# or
+
+# yarn
 yarn add @opto-code/nuxt-dev-console
-# or
+
+# pnpm
 pnpm add @opto-code/nuxt-dev-console
 ```
 
-## Setup
+## 🚀 Quick Setup
 
-Add `@opto-code/nuxt-dev-console` to your `nuxt.config.js`:
+1. Add the module to your `nuxt.config.ts`:
 
-```js
+```ts
 export default defineNuxtConfig({
-  modules: ["@opto-code/nuxt-dev-console"],
+  modules: ['@opto-code/nuxt-dev-console'],
   devConsole: {
-    // Basic configuration
-    enabled: true, // Enable/disable the console
-    allowProduction: false, // Allow console in production
-
-    // Appearance
-    position: "bottom-right", // 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left'
-    theme: "dark", // 'dark' | 'light' | 'system'
-    height: 600, // Initial height in pixels
-    width: 800, // Initial width in pixels
-
-    // Custom theme (optional)
-    customTheme: {
-      dark: {
-        background: '#1a1a1a',
-        text: '#ffffff',
-      },
-      light: {
-        background: '#ffffff',
-        text: '#000000',
-      }
-    },
-
-    // Performance
-    maxLogHistory: 1000, // Maximum number of logs to keep
-    queueSize: 1000, // Maximum size of the log queue
-
-    // Keyboard shortcuts
-    shortcuts: {
-      toggle: "ctrl+shift+d", // Toggle console visibility
-      clear: "ctrl+l", // Clear console
-      search: "ctrl+f", // Focus search
-    },
-
-    // Display options
-    filters: {
-      showTimestamp: true, // Show timestamps with logs
-      showLogLevel: true, // Show log levels
-      minLevel: "info", // Minimum log level ('debug' | 'info' | 'warn' | 'error')
-    },
-  },
-});
+    enabled: true
+  }
+})
 ```
 
-## Usage
-
-There are two ways to use the dev console in your Nuxt application:
-
-### 1. Using the DevConsole Component
-
-The most flexible way is to use the DevConsole component directly:
+2. Add the console component to your app:
 
 ```vue
 <template>
   <div>
     <!-- Your app content -->
-    <DevConsole ref="devConsole" />
+    <DevConsole />
   </div>
 </template>
-
-<script setup>
-import { ref } from 'vue'
-
-// Get a reference to the DevConsole
-const devConsole = ref(null)
-
-// Use tag-enabled logging methods
-const logExample = () => {
-  // Basic tagged logging
-  devConsole.value?.logWithTags(['user', 'auth'], 'User logged in', { userId: 123 })
-  
-  // Error logging with tags
-  devConsole.value?.errorWithTags(
-    ['api', 'error'], 
-    'API request failed',
-    new Error('Network error')
-  )
-  
-  // Warning with performance tags
-  devConsole.value?.warnWithTags(
-    ['performance', 'api'], 
-    'Slow API response',
-    { endpoint: '/users', duration: '500ms' }
-  )
-  
-  // Info with feature tags
-  devConsole.value?.infoWithTags(
-    ['feature', 'beta'], 
-    'New feature accessed',
-    { featureId: 'x-123' }
-  )
-}
-</script>
 ```
 
-### 2. Using the Global DevLogger
+## 🔧 Configuration
 
-The module also provides a global `$devLogger` that's automatically injected:
+### Basic Configuration
 
-```js
-// In your components/pages
-export default defineComponent({
-  setup() {
-    const { $devLogger } = useNuxtApp()
+```ts
+export default defineNuxtConfig({
+  modules: ['@opto-code/nuxt-dev-console'],
+  devConsole: {
+    // Basic settings
+    enabled: true,
+    allowProduction: false,
 
-    // Basic logging
-    $devLogger.log("Hello world")
-    $devLogger.info("User logged in", { userId: 123 })
-    $devLogger.warn("Deprecated feature used")
-    $devLogger.error("Operation failed", new Error("Details"))
-    $devLogger.debug("Debug information")
+    // Visual Configuration
+    position: 'bottom-right',
+    theme: 'dark',
+    height: 600,
+    width: 800,
 
-    // Log groups
-    $devLogger.group('API Requests')
-    $devLogger.log('GET /api/users')
-    $devLogger.log('POST /api/data')
-    $devLogger.groupEnd()
+    // Functionality
+    maxLogHistory: 1000,
+    queueSize: 1000,
+    flushInterval: 100
   }
 })
 ```
 
-### Advanced Features
+### Advanced Configuration
 
-#### Tag-Based Logging
+See our [Configuration Guide](./docs/dev-console.md#advanced-configuration) for detailed options.
 
-Use tags to organize and filter your logs:
+## 📖 Usage
 
-```js
-// Feature tracking
-devConsole.value?.logWithTags(
-  ['feature', 'beta', 'usage'],
-  'Feature accessed',
-  { featureId: 'x-123', user: 'john' }
-)
+### Basic Logging
 
-// Error tracking
-devConsole.value?.errorWithTags(
-  ['database', 'query', 'error'],
-  'Query failed',
-  { query: 'SELECT...', error: 'Timeout' }
-)
+```ts
+// Automatic console method capture
+console.log('Hello World')
+console.info('Server started', { port: 3000 })
+console.warn('Deprecated feature used')
+console.error('Connection failed', new Error('Timeout'))
 
-// Performance monitoring
-devConsole.value?.warnWithTags(
-  ['performance', 'api', 'latency'],
-  'High latency detected',
-  { endpoint: '/api/users', duration: '2500ms' }
-)
-
-// Configuration changes
-devConsole.value?.infoWithTags(
-  ['config', 'system'],
-  'Config updated',
-  { changes: { theme: 'dark' } }
-)
+// Using the global logger
+const { $devLogger } = useNuxtApp()
+$devLogger.log('Hello from dev logger')
 ```
 
-Common tag categories:
-- Feature areas: 'auth', 'api', 'database', 'ui'
-- Log types: 'error', 'warning', 'debug'
-- Environment: 'dev', 'staging', 'prod'
-- Components: 'frontend', 'backend', 'middleware'
-- Status: 'success', 'failure', 'pending'
+### Tagged Logging
 
-#### Log Organization
+```ts
+// Get console reference
+const devConsole = ref(null)
 
-```js
-// Group related logs
-devConsole.value?.group('User Authentication')
-devConsole.value?.logWithTags(['auth'], 'Login attempt')
-devConsole.value?.logWithTags(['auth', 'success'], 'Validation passed')
-devConsole.value?.groupEnd()
-
-// Track API calls
-devConsole.value?.group('API Requests')
-devConsole.value?.logWithTags(['api', 'request'], 'GET /api/users')
-devConsole.value?.logWithTags(['api', 'response'], 'Response received')
-devConsole.value?.groupEnd()
+// Log with tags for better organization
+devConsole.value?.logWithTags(['user', 'auth'], 'User logged in', { userId: 123 })
+devConsole.value?.errorWithTags(['api', 'error'], 'API failed', new Error('Network error'))
+devConsole.value?.warnWithTags(['perf'], 'Slow operation', { latency: '500ms' })
 ```
 
-#### Export and Storage
+### Log Groups
 
-```js
+```ts
+// Create collapsible groups
+console.group('API Requests')
+console.log('GET /api/users')
+console.log('POST /api/data')
+console.groupEnd()
+
+// Collapsed by default
+console.groupCollapsed('Performance Metrics')
+console.log('Load time: 1.2s')
+console.log('First paint: 0.8s')
+console.groupEnd()
+```
+
+### Export Functionality
+
+```ts
 // Export logs programmatically
-devConsole.value?.exportLogs() // JSON format
-devConsole.value?.exportLogs('csv') // CSV format
-devConsole.value?.exportLogs('txt') // Text format
-
-// Clear logs
-devConsole.value?.clear()
+window.$devLogger.exportLogs()         // JSON format
+window.$devLogger.exportLogs('csv')    // CSV format
+window.$devLogger.exportLogs('txt')    // Text format
 ```
 
-### Best Practices
+## ⌨️ Keyboard Shortcuts
 
-1. **Consistent Tag Usage**
-   ```js
-   // Good - consistent tag categories
-   devConsole.value?.logWithTags(['auth', 'user'], 'Login')
-   devConsole.value?.logWithTags(['auth', 'session'], 'Session created')
-   
-   // Avoid - inconsistent tag naming
-   devConsole.value?.logWithTags(['authentication'], 'Login')
-   devConsole.value?.logWithTags(['auth'], 'Session created')
-   ```
+| Shortcut | Action |
+|----------|---------|
+| `ctrl+shift+d` | Toggle console visibility |
+| `ctrl+l` | Clear console |
+| `ctrl+f` | Focus search bar |
+| `esc` | Close console |
 
-2. **Meaningful Data Objects**
-   ```js
-   // Good - includes relevant data
-   devConsole.value?.logWithTags(['api'], 'Request completed', {
-     endpoint: '/users',
-     duration: '100ms',
-     status: 200
-   })
-   
-   // Avoid - missing context
-   devConsole.value?.logWithTags(['api'], 'Request completed')
-   ```
+## 🎨 Theme Customization
 
-3. **Hierarchical Tags**
-   ```js
-   // Good - hierarchical organization
-   devConsole.value?.logWithTags(['ui', 'button', 'click'], 'Button clicked')
-   devConsole.value?.logWithTags(['ui', 'form', 'submit'], 'Form submitted')
-   ```
-
-4. **Error Context**
-   ```js
-   // Good - includes error object and context
-   devConsole.value?.errorWithTags(['api', 'error'], 'API failed', {
-     error: new Error('Network timeout'),
-     request: { url, method, params }
-   })
-   ```
-
-### Keyboard Shortcuts
-
-Default shortcuts (all customizable):
-- `Ctrl+Shift+D`: Toggle console visibility
-- `Ctrl+L`: Clear console
-- `Ctrl+F`: Focus search
-- `Esc`: Close console
-
-### Theme Support
-
-```js
-// In nuxt.config.js
+```ts
 devConsole: {
-  theme: 'dark', // 'dark' | 'light' | 'system'
+  theme: 'dark',
   customTheme: {
     dark: {
       background: '#1a1a1a',
-      text: '#ffffff',
-      // Add more color variables
+      text: '#ffffff'
     },
     light: {
       background: '#ffffff',
-      text: '#000000',
-      // Add more color variables
+      text: '#000000'
     }
   }
 }
 ```
 
-### Production Usage
+## 📚 Best Practices
 
-By default, the console is disabled in production. To enable it:
+### Log Organization
+1. Use consistent tag naming across your application
+2. Combine broad and specific tags for better filtering
+3. Include relevant data objects with your logs
+4. Use log groups for related operations
+5. Add timestamps for time-sensitive operations
 
-```js
-devConsole: {
-  allowProduction: true
+### Performance
+1. Configure appropriate `maxLogHistory` for your needs
+2. Regularly clear old logs to maintain performance
+3. Use tag filtering to focus on relevant information
+4. Export logs for long-term storage or analysis
+
+### Development Workflow
+1. Position the console where it won't interfere with UI testing
+2. Use keyboard shortcuts for faster navigation
+3. Utilize search history for common queries
+4. Export logs when debugging complex issues
+5. Configure appropriate log levels for different environments
+
+## 🔒 TypeScript Support
+
+The module includes full TypeScript definitions for all features:
+
+```ts
+interface DevLogger {
+  log(...args: any[]): void
+  info(...args: any[]): void
+  warn(...args: any[]): void
+  error(...args: any[]): void
+  debug(...args: any[]): void
+  group(label: string): void
+  groupEnd(): void
+  time(label: string): void
+  timeEnd(label: string): void
+  // ... more methods
 }
 ```
 
-⚠️ Warning: Enabling the console in production should be done with caution as it may expose sensitive debugging information.
+## 📘 Documentation
 
-## TypeScript Support
+- [Dev Console Documentation](./docs/dev-console.md) - UI component details
+- [Dev Logger Documentation](./docs/dev-logger.md) - Logging utility details
+- [Contributing Guide](./CONTRIBUTING.md) - How to contribute
+- [Changelog](./CHANGELOG.md) - Version history
 
-The module includes full TypeScript support with type definitions for:
-- Configuration options
-- Logger methods
-- Theme customization
-- Event handlers
-- Plugin injections
+## 🤝 Contributing
 
-## Documentation
+Contributions are welcome! Please read our [Contributing Guide](./CONTRIBUTING.md) first.
 
-For detailed documentation, see:
-- [Dev Logger Documentation](./docs/dev-logger.md)
-- [Dev Console Documentation](./docs/dev-console.md)
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-## Contributing
+## 📝 License
 
-Please read our [Contributing Guide](./CONTRIBUTING.md) before submitting a Pull Request.
+Released under the [MIT License](./LICENSE).
 
-## License
+## 🙏 Acknowledgments
 
-[MIT License](./LICENSE)
+- [Nuxt](https://nuxt.com) - The Intuitive Vue Framework
+- [Vue.js](https://vuejs.org) - The Progressive JavaScript Framework
+- [Vuetify](https://vuetifyjs.com) - Material Design Framework
 
-6. Create a playground for testing:
+<!-- Badges -->
+[npm-version-src]: https://img.shields.io/npm/v/@opto-code/nuxt-dev-console/latest.svg?style=flat&colorA=18181B&colorB=28CF8D
+[npm-version-href]: https://npmjs.com/package/@opto-code/nuxt-dev-console
 
-```bash
-mkdir playground
-cd playground
-npx nuxi init .
-```
+[npm-downloads-src]: https://img.shields.io/npm/dm/@opto-code/nuxt-dev-console.svg?style=flat&colorA=18181B&colorB=28CF8D
+[npm-downloads-href]: https://npmjs.com/package/@opto-code/nuxt-dev-console
 
-To publish:
-
-1. Build your module:
-
-```bash
-npm run build
-```
-
-2. Publish to npm:
-
-```bash
-npm publish
-```
-
-Best Practices:
-
-1. Use TypeScript for better type support
-2. Include comprehensive documentation
-3. Add tests using Vitest
-4. Use semantic versioning
-5. Add CI/CD with GitHub Actions
-6. Include examples in the playground
-7. Add proper ESLint and Prettier configs
-8. Use changesets for version management
-
-This structure follows the official Nuxt module template and makes it easy for others to:
-
-1. Install via npm/yarn
-2. Configure through nuxt.config
-3. Get TypeScript support
-4. Access documentation
-5. See examples in the playground
-6. Contribute through GitHub
+[license-src]: https://img.shields.io/npm/l/@opto-code/nuxt-dev-console.svg?style=flat&colorA=18181B&colorB=28CF8D
+[license-href]: https://npmjs.com/package/@opto-code/nuxt-dev-console
