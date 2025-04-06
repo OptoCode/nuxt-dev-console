@@ -1,29 +1,30 @@
 # nuxt-dev-console
 
-A development console for Nuxt 3 applications with filtering and copy capabilities.
+A powerful development console for Nuxt 3 applications with advanced logging, filtering, and debugging capabilities.
 
 ## Features
 
-- 🎨 Customizable theme (dark/light/system)
-- 📍 Flexible positioning
-- ⌨️ Keyboard shortcuts
-- 🔍 Advanced filtering
-- 📋 Copy to clipboard
-- ⚡ Performance optimized
+- 🎨 Customizable theme (dark/light/system) with custom theme support
+- 📍 Flexible positioning and resizable interface
+- ⌨️ Configurable keyboard shortcuts
+- 🔍 Advanced filtering and search capabilities
+- 🏷️ Tag-based log organization
+- 📋 Copy and export functionality (JSON, CSV, TXT)
+- 💾 Persistent storage with quota management
+- ⚡ Performance optimized with log queuing
 - 🎯 Production mode support (optional)
 - 🔄 Real-time log updates
+- 📊 Log grouping and collapsible sections
+- 🔒 Type-safe logging with TypeScript support
 
 ## Installation
 
 ```bash
-npm install npm install @opto-code/nuxt-dev-console
+npm install @opto-code/nuxt-dev-console
 # or
 yarn add @opto-code/nuxt-dev-console
-```
-
-## Update Module
-```bash
-npm install @opto-code/nuxt-dev-console@latest
+# or
+pnpm add @opto-code/nuxt-dev-console
 ```
 
 ## Setup
@@ -36,28 +37,42 @@ export default defineNuxtConfig({
   devConsole: {
     // Basic configuration
     enabled: true, // Enable/disable the console
+    allowProduction: false, // Allow console in production
 
     // Appearance
     position: "bottom-right", // 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left'
     theme: "dark", // 'dark' | 'light' | 'system'
-    height: 300, // Initial height in pixels
-    width: 400, // Initial width in pixels
+    height: 600, // Initial height in pixels
+    width: 800, // Initial width in pixels
 
-    // Behavior
-    maxLogHistory: 100, // Maximum number of logs to keep
-    allowProduction: false, // Allow console in production
+    // Custom theme (optional)
+    customTheme: {
+      dark: {
+        background: '#1a1a1a',
+        text: '#ffffff',
+      },
+      light: {
+        background: '#ffffff',
+        text: '#000000',
+      }
+    },
+
+    // Performance
+    maxLogHistory: 1000, // Maximum number of logs to keep
+    queueSize: 1000, // Maximum size of the log queue
 
     // Keyboard shortcuts
     shortcuts: {
       toggle: "ctrl+shift+d", // Toggle console visibility
       clear: "ctrl+l", // Clear console
+      search: "ctrl+f", // Focus search
     },
 
-    // Filtering options
+    // Display options
     filters: {
       showTimestamp: true, // Show timestamps with logs
       showLogLevel: true, // Show log levels
-      minLevel: "info", // Minimum log level to display ('info' | 'warn' | 'error')
+      minLevel: "info", // Minimum log level ('debug' | 'info' | 'warn' | 'error')
     },
   },
 });
@@ -65,48 +80,100 @@ export default defineNuxtConfig({
 
 ## Usage
 
-### Basic Usage
+### Basic Logging
 
-The DevConsole will be automatically available in development mode. You can use it through the composables:
+The DevLogger is automatically injected into your Nuxt app and is available as `$devLogger`:
 
 ```js
-// Using the log composable
-const devLog = useDevLog();
+// In your components/pages
+export default defineComponent({
+  setup() {
+    const { $devLogger } = useNuxtApp();
 
-// Basic logging functions
-devLog.log("Hello");
-devLog.error("Error message");
-devLog.warn("Warning message");
-devLog.info("Info message");
+    // Basic logging
+    $devLogger.log("Hello world");
+    $devLogger.info("User logged in", { userId: 123 });
+    $devLogger.warn("Deprecated feature used");
+    $devLogger.error("Operation failed", new Error("Details"));
+    $devLogger.debug("Debug information");
+
+    // Tagged logging
+    $devLogger.logWithTags(['auth', 'user'], 'User authenticated');
+    $devLogger.errorWithTags(['api'], 'API request failed');
+
+    // Log groups
+    $devLogger.group('API Requests');
+    $devLogger.log('GET /api/users');
+    $devLogger.log('POST /api/data');
+    $devLogger.groupEnd();
+  }
+});
+```
+
+### Log Organization
+
+```js
+// In your components/pages
+const { $devLogger } = useNuxtApp();
+
+// Create log groups
+$devLogger.group('User Authentication');
+$devLogger.info('Login attempt');
+$devLogger.log('Validation passed');
+$devLogger.groupEnd();
+
+// Use tags for filtering
+$devLogger.logWithTags(['auth', 'success'], 'Login successful');
+$devLogger.errorWithTags(['api', 'error'], 'API timeout');
+```
+
+### Export and Storage
+
+```js
+// In your components/pages
+const { $devLogger } = useNuxtApp();
+
+// Export logs programmatically
+$devLogger.exportLogs(); // JSON format
+$devLogger.exportLogs('csv'); // CSV format
+$devLogger.exportLogs('txt'); // Text format
 
 // Browser console control
-devLog.enableBrowserConsole(); // Enable browser console logging
-devLog.disableBrowserConsole(); // Disable browser console logging
+$devLogger.enableBrowserConsole();
+$devLogger.disableBrowserConsole();
 
 // Clear logs
-devLog.clear();
-
-// Access logs array
-console.log(devLog.logs.value);
-
-// Using the error handler composable (automatically handles Nuxt and Vue errors)
-const errorHandler = useNuxtErrorHandler();
+$devLogger.clear();
 ```
 
 ### Keyboard Shortcuts
 
-Default shortcuts (customizable):
-
+Default shortcuts (all customizable):
 - `Ctrl+Shift+D`: Toggle console visibility
 - `Ctrl+L`: Clear console
+- `Ctrl+F`: Focus search
+- `Esc`: Close console
 
 ### Theme Support
 
-The console supports three theme modes:
-
-- `dark`: Dark theme
-- `light`: Light theme
-- `system`: Automatically matches system preferences
+```js
+// In nuxt.config.js
+devConsole: {
+  theme: 'dark', // 'dark' | 'light' | 'system'
+  customTheme: {
+    dark: {
+      background: '#1a1a1a',
+      text: '#ffffff',
+      // Add more color variables
+    },
+    light: {
+      background: '#ffffff',
+      text: '#000000',
+      // Add more color variables
+    }
+  }
+}
+```
 
 ### Production Usage
 
@@ -114,24 +181,26 @@ By default, the console is disabled in production. To enable it:
 
 ```js
 devConsole: {
-  allowProduction: true;
+  allowProduction: true
 }
 ```
 
-⚠️ Warning: Enabling the console in production should be done with caution.
-
-### Filtering
-
-The console provides several filtering options:
-
-- Search by text
-- Filter by log level
-- Show/hide timestamps
-- Minimum log level threshold
+⚠️ Warning: Enabling the console in production should be done with caution as it may expose sensitive debugging information.
 
 ## TypeScript Support
 
-The module includes full TypeScript support with type definitions for all options and APIs.
+The module includes full TypeScript support with type definitions for:
+- Configuration options
+- Logger methods
+- Theme customization
+- Event handlers
+- Plugin injections
+
+## Documentation
+
+For detailed documentation, see:
+- [Dev Logger Documentation](./docs/dev-logger.md)
+- [Dev Console Documentation](./docs/dev-console.md)
 
 ## Contributing
 

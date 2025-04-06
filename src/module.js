@@ -106,6 +106,33 @@ export default defineNuxtModule({
         throw error;
       }
 
+      // Validate options
+      const validateShortcuts = (shortcuts) => {
+        if (!shortcuts || typeof shortcuts !== 'object') return false;
+        if (!shortcuts.toggle || !shortcuts.clear) return false;
+        if (typeof shortcuts.toggle !== 'string' || typeof shortcuts.clear !== 'string') return false;
+        return true;
+      };
+
+      if (!validateShortcuts(options.shortcuts)) {
+        console.warn('[nuxt-dev-console] Invalid shortcuts configuration, using defaults');
+        options.shortcuts = this.defaults.shortcuts;
+      }
+
+      // Type check runtime config
+      const validateConfig = (config) => {
+        return {
+          ...config,
+          height: Number(config.height) || this.defaults.height,
+          width: Number(config.width) || this.defaults.width,
+          maxLogHistory: Number(config.maxLogHistory) || this.defaults.maxLogHistory,
+          enabled: Boolean(config.enabled),
+          allowProduction: Boolean(config.allowProduction),
+        };
+      };
+
+      options = validateConfig(options);
+
       // Add runtime config with validation
       const runtimeConfig = {
         ...options,

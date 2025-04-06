@@ -7,6 +7,7 @@ The Nuxt Dev Console module provides a development-only logger that allows you t
 - Only logs in development mode (or when `allowProduction` is set to `true`)
 - Prefixes all logs with `[DevLogger]` for easy identification
 - Supports all standard console methods (log, info, warn, error, etc.)
+- Queue system for handling rapid logging with automatic overflow protection
 - Available as a Nuxt plugin with TypeScript support
 - Also available as a global `$devLogger` object in the browser
 
@@ -27,6 +28,22 @@ function someFunction() {
   $devLogger.error('Something went wrong', new Error('Error details'));
 }
 </script>
+```
+
+### Log Groups and Organization
+
+```js
+// Create a log group
+$devLogger.group('User Authentication');
+$devLogger.info('Attempting login...');
+$devLogger.log('Credentials validated');
+$devLogger.groupEnd();
+
+// Create a collapsed group
+$devLogger.groupCollapsed('API Requests');
+$devLogger.log('GET /api/users');
+$devLogger.log('POST /api/data');
+$devLogger.groupEnd();
 ```
 
 ### Available Methods
@@ -62,14 +79,15 @@ window.$devLogger.table([{ name: 'John', age: 30 }, { name: 'Jane', age: 28 }]);
 
 The development logger is automatically enabled in development mode. In production, all logger methods become no-op functions (they do nothing) unless you explicitly enable production logging.
 
-To allow logging in production, set the `allowProduction` option to `true` in your `nuxt.config.js`:
+To configure the logger, use the `devConsole` options in your `nuxt.config.js`:
 
 ```js
 // nuxt.config.js
 export default defineNuxtConfig({
   devConsole: {
-    // ... other options
-    allowProduction: true, // Enable dev console and logger in production
+    enabled: true,
+    allowProduction: false, // Enable in production mode
+    maxLogHistory: 1000, // Maximum number of logs to keep in memory
   }
 })
 ```
@@ -81,3 +99,4 @@ export default defineNuxtConfig({
 3. For critical errors that should always be logged, use the standard `console.error()` instead.
 4. Use groups to organize related logs and make the console output more readable.
 5. Use `time()` and `timeEnd()` to measure performance of operations during development.
+6. Take advantage of the queue system's automatic handling for rapid logging scenarios.

@@ -190,24 +190,49 @@ const STORAGE_KEYS = {
   THEME: 'dev-console-theme'
 };
 
-// Modify logs ref to load from localStorage
-const logs = ref((() => {
-  try {
-    const savedLogs = localStorage.getItem(STORAGE_KEYS.LOGS);
-    return savedLogs ? JSON.parse(savedLogs) : [];
-  } catch (e) {
-    console.error('Failed to load logs from localStorage:', e);
-    return [];
+// Add localStorage utility functions
+const safeLocalStorage = {
+  get: (key, defaultValue = null) => {
+    try {
+      const item = localStorage.getItem(key);
+      return item ? JSON.parse(item) : defaultValue;
+    } catch (e) {
+      console.error(`[DevConsole] Failed to read ${key} from localStorage:`, e);
+      return defaultValue;
+    }
+  },
+  set: (key, value) => {
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+      return true;
+    } catch (e) {
+      if (e.name === 'QuotaExceededError') {
+        console.error(`[DevConsole] localStorage quota exceeded. Clearing old logs.`);
+        // Try to clear some space by removing old logs
+        const oldLogs = safeLocalStorage.get(STORAGE_KEYS.LOGS, []);
+        if (oldLogs.length > maxLogSize.value / 2) {
+          safeLocalStorage.set(STORAGE_KEYS.LOGS, oldLogs.slice(-maxLogSize.value / 2));
+          // Try setting the value again
+          try {
+            localStorage.setItem(key, JSON.stringify(value));
+            return true;
+          } catch (retryError) {
+            console.error(`[DevConsole] Still failed after clearing space:`, retryError);
+          }
+        }
+      }
+      console.error(`[DevConsole] Failed to write ${key} to localStorage:`, e);
+      return false;
+    }
   }
-})());
+};
 
-// Add watcher to persist logs
+// Modify logs ref to use safeLocalStorage
+const logs = ref(safeLocalStorage.get(STORAGE_KEYS.LOGS, []));
+
+// Add watcher to persist logs using safeLocalStorage
 watch(logs, (newLogs) => {
-  try {
-    localStorage.setItem(STORAGE_KEYS.LOGS, JSON.stringify(newLogs));
-  } catch (e) {
-    console.error('Failed to save logs to localStorage:', e);
-  }
+  safeLocalStorage.set(STORAGE_KEYS.LOGS, newLogs);
 }, { deep: true });
 
 // Modify searchHistory to load from localStorage
@@ -729,6 +754,45 @@ const getLogPreview = (log) => {
   }).join(' ').slice(0, 60) + (log.content.join(' ').length > 60 ? '...' : '');
 };
 
+// Add export functionality
+const exportLogs = () => {
+  try {
+    const exportData = {
+      logs: logs.value,
+      timestamp: new Date().toISOString(),
+      config: mergedProps.value
+    };
+    
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `dev-console-logs-${new Date().toISOString()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  } catch (e) {
+    console.error('[DevConsole] Failed to export logs:', e);
+  }
+};
+
+// Add cleanup on component unmount
+onUnmounted(() => {
+  // Clear any intervals or timeouts
+  if (searchTimeout) {
+    clearTimeout(searchTimeout);
+  }
+  
+  // Save current state
+  safeLocalStorage.set(STORAGE_KEYS.LOGS, logs.value);
+  safeLocalStorage.set(STORAGE_KEYS.SEARCH_HISTORY, searchHistory.value);
+  
+  // Clear references
+  logs.value = [];
+  searchHistory.value = [];
+});
+
 onMounted(() => {
   interceptConsole();
   window.addEventListener("keydown", handleKeyboardShortcut);
@@ -825,9 +889,19 @@ onUnmounted(() => {
             </v-menu>
 
             <v-btn 
-              :icon="currentTheme === 'dark' ? 'mdi-weather-night' : 'mdi-weather-sunny'"
               @click="toggleTheme"
-            ></v-btn>
+              :color="localTheme === 'system' ? 'info' : undefined"
+            >
+              <v-icon>
+                {{ localTheme === 'dark' ? 'mdi-weather-night' : localTheme === 'light' ? 'mdi-weather-sunny' : 'mdi-theme-light-dark' }}
+              </v-icon>
+              <v-tooltip
+                activator="parent"
+                location="bottom"
+              >
+                {{ localTheme === 'dark' ? 'Switch to Light Theme' : localTheme === 'light' ? 'Switch to System Theme' : 'Switch to Dark Theme' }}
+              </v-tooltip>
+            </v-btn>
             <v-btn icon="mdi-delete" @click="clearLogs"></v-btn>
             <v-btn icon="mdi-close" @click="toggleVisibility"></v-btn>
           </v-toolbar-items>
