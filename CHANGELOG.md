@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## v0.1.12
+
+[compare changes](https://github.com/OptoCode/nuxt-dev-console/compare/v0.1.11...v0.1.12)
+
+### 🚀 Enhancements
+
+- Enhance DevConsole and documentation ([be383a9](https://github.com/OptoCode/nuxt-dev-console/commit/be383a9))
+
+### 🏡 Chore
+
+- Update author information and improve documentation links ([c48a4bd](https://github.com/OptoCode/nuxt-dev-console/commit/c48a4bd))
+
+### ❤️ Contributors
+
+- OptoCode ([@OptoCode](https://github.com/OptoCode))
+
 ## v0.1.11
 
 [compare changes](https://github.com/OptoCode/nuxt-dev-console/compare/v0.1.10...v0.1.11)
